@@ -1,0 +1,32 @@
+{
+  "name": "agent-timeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "tsx --test tests/engine.test.ts",
+    "test": "playwright test",
+    "check": "npm run typecheck && npm run test:unit && npm test",
+    "verify:fixed": "node scripts/verify.mjs fixed",
+    "verify:buggy": "node scripts/verify.mjs buggy"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vite": "^7.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
