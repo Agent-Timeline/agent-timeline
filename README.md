@@ -6,6 +6,10 @@ Agent Timeline is an open-source project for reproducing timing bugs in AI inter
 
 The local workbench includes an editable event timeline, a streaming provider, automatic cancellation replay, and pass/fail assertions against a real demo chat. External application adapters are not implemented yet.
 
+![Agent Timeline workbench with an editable event timeline and demo application](docs/images/workbench.png)
+
+*Edit event timing, replay AI interactions, and catch late responses after cancellation.*
+
 ## Run locally
 
 Requires Node.js 22.12 or newer.
