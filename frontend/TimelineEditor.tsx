@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Scenario, ProviderEvent } from '../src/engine';
+import type { Scenario, ProviderEvent } from '../shared/engine';
 export function TimelineEditor({ scenario, onChange, disabled, failedEvent }: {
   scenario: Scenario; onChange: (s: Scenario) => void; disabled: boolean; failedEvent: number | null;
 }) {

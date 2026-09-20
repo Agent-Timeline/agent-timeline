@@ -10,7 +10,7 @@ This document describes the implemented cancellation workbench and seven gallery
 - Run `npm run check` for type checks, engine tests, and browser tests. Gallery browser tests exercise every preset in both modes.
 - `npm run verify:fixed` and `npm run verify:buggy` cover the original cancellation demo only. The buggy command intentionally exits with failure.
 
-The cancellation fixture is [cancel-late-result.json](../scenarios/cancel-late-result.json). Gallery definitions are in [raceScenarios.ts](../demo/raceScenarios.ts), with execution and assertions in [ScenarioGallery.tsx](../demo/ScenarioGallery.tsx). Gallery presets cannot be imported into the workbench's version-1 JSON editor.
+The cancellation fixture is [cancel-late-result.json](../scenarios/cancel-late-result.json). Gallery definitions are in [raceScenarios.ts](../frontend/raceScenarios.ts), with execution and assertions in [ScenarioGallery.tsx](../frontend/ScenarioGallery.tsx). Gallery presets cannot be imported into the workbench's version-1 JSON editor.
 
 ## Timing and verdicts
 

@@ -5,13 +5,19 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "tsx src/server.ts",
+    "dev": "node scripts/dev.mjs",
     "typecheck": "tsc --noEmit",
-    "test:unit": "tsx --test tests/engine.test.ts",
+    "test:unit": "tsx --test tests/*.test.ts",
     "test": "playwright test",
     "check": "npm run typecheck && npm run test:unit && npm test",
     "verify:fixed": "node scripts/verify.mjs fixed",
-    "verify:buggy": "node scripts/verify.mjs buggy"
+    "verify:buggy": "node scripts/verify.mjs buggy",
+    "dev:frontend": "vite --config frontend/vite.config.ts",
+    "dev:backend": "tsx backend/server.ts",
+    "build:frontend": "vite build --config frontend/vite.config.ts",
+    "verify": "npm run verify:backend && npm run verify:frontend",
+    "verify:backend": "tsc --project tsconfig.backend.json && npm run test:unit && playwright test --config playwright.backend.config.ts",
+    "verify:frontend": "tsc --project tsconfig.frontend.json && npm run build:frontend && playwright test --config playwright.frontend.config.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

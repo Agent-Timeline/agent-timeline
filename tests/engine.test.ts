@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parseScenario, replay } from '../src/engine.js';
+import { parseScenario, replay } from '../shared/engine.js';
 const fixture = JSON.parse(readFileSync(new URL('../scenarios/cancel-late-result.json', import.meta.url), 'utf8'));
 test('validates supported scenarios and rejects malformed timing, events and assertions', () => {
   assert.equal(parseScenario(fixture).id, 'cancel-late-result');

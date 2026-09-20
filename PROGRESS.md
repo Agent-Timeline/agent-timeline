@@ -23,13 +23,39 @@ The standalone local workbench can edit and replay a cancellation scenario again
 - [x] Headless verification commands for the built-in demo.
 - [x] Desktop visual review and mobile overflow check.
 
+## Latest improvement: verification commands
+
+- Added `npm run verify`, combining `verify:backend` and `verify:frontend` with failure propagation.
+- Backend checks use their own TypeScript scope, engine/client unit tests, and direct API tests against a fresh backend on port 4428. They start no frontend and launch no browser.
+- Frontend checks use their own TypeScript scope, build the UI, and run browser tests with fresh frontend/provider processes on ports 4417/4418. Existing development servers are never reused.
+- Updated AGENTS.md to require combined verification for implementation, test, dependency, and build changes; documentation-only changes are exempt and skipped/failed checks must be reported.
+- Verification: `npm run verify` passed: both type checks, frontend build, 7 unit tests, 2 backend API tests, and 16 frontend browser tests.
+
+## Previous improvement: independent frontend and backend
+
+- Moved UI into `frontend/`, HTTP provider into `backend/`, engine into `shared/`, and connection into `client/`; updated imports, tests, examples, and documentation.
+- The backend no longer imports Vite or serves UI assets. It runs alone on loopback port 4318 and returns JSON 404 for non-API paths.
+- Frontend Vite runs independently on port 4317 with an API proxy. `npm run dev` supervises both, while `dev:frontend` and `dev:backend` run each separately.
+- Added `build:frontend`; one root dependency manifest remains intentional. Static build hosting requires API routing.
+- Verification: TypeScript checks, all 7 unit tests and 18 browser tests passed. Combined startup/shutdown was verified to start and stop both listeners; the combined development command was then restarted.
+- Verified frontend production build and provider-only operation before starting the frontend: the standalone client streamed the fixture and the provider returned 404 for `/`.
+
+## Previous improvement: reusable provider connection
+
+- Added `createTimelineProvider` in `client/provider.ts`, a framework-independent Fetch/async-iterator client for the existing NDJSON endpoint.
+- The cancellation workbench now uses it. It preserves late events and duplicate IDs while validating stream shape, request identity, timing, and termination.
+- Added abort and reader cleanup, protocol tests, concurrent-request and abort tests against the real HTTP server, and a standalone Node consumer in `examples/provider-connection/run.ts`.
+- Added `docs/PROVIDER.md` with the wire contract, development backend/proxy setup, cancellation semantics, and source-level integration instructions.
+- Verification: full existing check passed (7 unit tests and 16 browser tests); both newly added HTTP integration tests passed separately. Type checking passed after the additions, and the standalone consumer printed the scripted response.
+- Limits: custom protocol, no published package, no provider-SDK compatibility or direct cross-origin browser setup. Host UI actions/assertions and a separate chat UI remain next steps. No private application was used.
+
 ## Scenario documentation
 
 - Added `docs/SCENARIOS.md` covering the cancellation workbench and all seven gallery presets: problems, exact timing, expected behavior, implemented assertions, and limitations.
 - Linked the reference from the README and documented contribution steps and unsupported extensions.
 - Checked the descriptions against the fixture, gallery recipes, and assertion implementation; documentation-only work did not require a new test run.
 
-## Latest improvement: seven runnable race scenarios
+## Previous improvement: seven runnable race scenarios
 
 - Added a gallery for out-of-order requests, cancel/retry, partial stream failure, navigation, deletion, changed inputs, and duplicate delivery.
 - Each recipe operates real fictional editor controls and state, using simulated provider streams; buggy mode fails and fixed mode passes.

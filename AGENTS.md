@@ -7,3 +7,7 @@ Read README.md and docs/MVP.md before implementation. Preserve real application 
 Build a standalone local React + Vite workbench. Do not add Storybook as a dependency or require it for host application integration.
 
 Update PROGRESS.md with each implementation milestone, including completed work, actual verification results, current limits, and next steps.
+
+Keep runtime boundaries explicit: frontend code lives in `frontend/`, the standalone HTTP provider in `backend/`, scenario contracts and replay in `shared/`, and the reusable connection in `client/`. The backend must not import Vite, React, or frontend code. Preserve independent frontend and backend startup commands.
+
+Before declaring code, tests, dependencies, or build configuration ready, run `npm run verify` from the repository root. It runs `verify:backend` (backend/client type checks, unit tests, and direct provider API tests without a frontend) and `verify:frontend` (frontend type checks, build, and browser tests). Report failures or skipped checks explicitly. Documentation-only changes do not require these checks.

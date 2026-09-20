@@ -1,9 +1,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { createServer as createViteServer } from 'vite';
-import { parseScenario, replay } from './engine.js';
+import { parseScenario, replay } from '../shared/engine.js';
 const scenario = parseScenario(JSON.parse(await readFile(new URL('../scenarios/cancel-late-result.json', import.meta.url), 'utf8')));
-const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
 const server = createServer(async (req, res) => {
   if (req.url === '/api/scenario' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -29,6 +27,10 @@ const server = createServer(async (req, res) => {
     }
     return;
   }
-  vite.middlewares(req, res);
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not found' }));
 });
-server.listen(4317, '127.0.0.1', () => console.log('Agent Timeline: http://127.0.0.1:4317'));
+const port = Number(process.env.TIMELINE_PROVIDER_PORT ?? 4318);
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid TIMELINE_PROVIDER_PORT');
+server.listen(port, '127.0.0.1', () => console.log(`Agent Timeline provider: http://127.0.0.1:${port}`));
+for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { server.close(); server.closeAllConnections(); });

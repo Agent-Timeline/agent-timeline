@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "backend",
+    "shared",
+    "client",
+    "examples",
+    "tests/*.test.ts",
+    "tests/provider.spec.ts",
+    "playwright.backend.config.ts"
+  ]
+}

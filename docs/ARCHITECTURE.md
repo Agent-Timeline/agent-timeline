@@ -6,6 +6,23 @@ The standalone workbench edits scenarios in memory and sends a validated snapsho
 
 The workbench reports the last delivered provider event when forbidden text is first observed. Batched DOM updates can combine events, so the highlight is diagnostic context rather than guaranteed causal attribution. Provider event times begin at request receipt; automatic browser actions begin at the start acknowledgement. Real browser scheduling and transport latency are not virtualized.
 
+## Implemented process boundaries
+
+```text
+Browser workbench
+       | UI assets / same-origin API
+       v
+frontend/ :4317 (Vite)
+       | /api HTTP proxy
+       v
+backend/ :4318 (Node HTTP) <--- client/ in a separate app or Node process
+       |
+       v
+shared/ scenario validation and replay
+```
+
+`backend/server.ts` imports only Node modules and shared code. It serves the provider API and returns JSON 404 for other paths. `frontend/vite.config.ts` serves the UI and proxies API traffic. `client/provider.ts` has no frontend dependency and uses a type-only shared import. The backend runs alone with `npm run dev:backend`; the frontend runs with `npm run dev:frontend`; `npm run dev` supervises both processes. Both bind to loopback. Root package dependencies remain shared. The frontend build is separate from the backend and requires API routing when hosted.
+
 ## System overview
 
 This diagram specifies the planned implementation. The workbench is a standalone local React + Vite application; it has no Storybook dependency.

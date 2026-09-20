@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "frontend",
+    "shared",
+    "client",
+    "tests/cancellation.spec.ts",
+    "tests/gallery.spec.ts",
+    "tests/workbench.spec.ts",
+    "playwright.frontend.config.ts"
+  ]
+}

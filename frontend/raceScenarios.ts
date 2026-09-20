@@ -1,4 +1,4 @@
-import type { ProviderEvent } from '../src/engine';
+import type { ProviderEvent } from '../shared/engine';
 export type Action = 'first' | 'second' | 'cancel' | 'leave' | 'return' | 'delete' | 'change';
 export interface RaceScenario {
   id: string; title: string; goal: string;

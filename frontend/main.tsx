@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { parseScenario, type Scenario } from '../src/engine';
+import { parseScenario, type Scenario } from '../shared/engine';
 import { TimelineEditor } from './TimelineEditor';
 import './style.css';
+import { createTimelineProvider } from '../client/provider';
 import { ScenarioGallery } from './ScenarioGallery';
 type Observation = { atMs: number; kind: 'cancel' | 'arrival'; label: string };
 type Result = { kind: 'pass' | 'fail' | 'error'; message: string; eventIndex: number | null };
@@ -56,18 +57,9 @@ function App() {
     const failRun = (message: string) => { cleanup(); controller.abort(); active.current = null; setResult({ kind: 'error', message, eventIndex: null }); setStatus('Run error'); setBusy(false); };
     try {
       timers.current.push(setTimeout(() => { if (!started && epoch === generation.current) failRun('Provider did not start within 10 seconds.'); }, 10000));
-      const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId, scenario: run }), signal: controller.signal });
-      if (!response.ok || !response.body) throw new Error('Provider rejected the request');
-      const reader = response.body.getReader(); const decoder = new TextDecoder(); let pending = '';
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        pending += decoder.decode(value, { stream: true });
-        const lines = pending.split('\n'); pending = lines.pop()!;
-        for (const line of lines) {
-          if (!line || epoch !== generation.current) continue;
-          const event = JSON.parse(line);
-          if (event.requestId !== requestId) continue;
+      const provider = createTimelineProvider({ endpoint: '/api/generate' });
+      for await (const event of provider.generate({ requestId, scenario: run, signal: controller.signal })) {
+          if (epoch !== generation.current) continue;
           if (event.type === 'start') {
             started = true; startTime = performance.now(); append('Provider connected');
             if (automatic) {
@@ -97,7 +89,6 @@ function App() {
           if (event.type === 'text') { setText(old => old + event.text); setStatus('Streaming'); }
           if (event.type === 'complete') { setStatus('Completed'); active.current = null; }
           if (event.type === 'error') { setStatus(`Error: ${event.message}`); active.current = null; }
-        }
       }
       if (!terminal && !controller.signal.aborted) throw new Error('Provider stream ended before a terminal event');
     } catch (error) { if (epoch === generation.current && !controller.signal.aborted) failRun(String(error)); }

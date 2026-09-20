@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { raceScenarios } from '../demo/raceScenarios';
+import { raceScenarios } from '../frontend/raceScenarios';
 for (const scenario of raceScenarios) {
   test(`${scenario.id}: detects buggy behavior and verifies the fix`, async ({ page }) => {
     await page.goto('/?gallery');

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { parseScenario } from '../src/engine';
+import { parseScenario } from '../shared/engine';
 const scenario = parseScenario(JSON.parse(readFileSync(new URL('../scenarios/cancel-late-result.json', import.meta.url), 'utf8')));
 const verificationMode = process.env.AGENT_TIMELINE_VERIFY;
 for (const mode of verificationMode ? [verificationMode] : ['buggy', 'fixed']) {
