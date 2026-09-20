@@ -232,3 +232,13 @@ Added a versioned local host configuration covering app URL, proxy port/route, s
 Verification: fixed a browser function serialization issue found through the real CLI/API paths. Final `npm run verify` passed all 48 tests, both type checks, and both builds. New regressions cover CLI success, workbench success/stop, intentionally buggy UI failure, missing delivery evidence, missing selectors, and config validation. `git diff --check` passed.
 
 Limits: app startup and development endpoint routing are explicit; CSS selectors and click/fill/select actions only; text-content assertions and host-provided delivery evidence; loopback URLs, same-origin browser requests, fresh sessions, and one run per backend. Connected actions are edited in JSON; built-in timeline runners are not migrated. Next: validate more independent integrations before adding protocol adapters or publishing the package.
+
+## Starter configuration and setup checks
+
+Added `npm run init -- --app-url URL` to generate a validated cancellation-test configuration and print selector, development-routing, CLI, and workbench instructions. Flags customize the output path, proxy port/endpoint, local upstream, selectors, and required delivery evidence. Existing configs are never overwritten; the default local config filename is gitignored.
+
+Setup checks verify the app's HTTP response without following redirects and temporarily start the proxy for a health/port check, then close it. They never click app controls or call the upstream. An offline app or occupied port leaves the generated file intact and returns an incomplete-check exit code. `--skip-check` supports configuration before app startup. Docs distinguish reachability from an actual passing test and explain the required selector/evidence review.
+
+Verification: `npm run verify` passed all 52 tests, type checks, and both builds. Four new tests exercise CLI generation, overwrite protection, offline output, proxy cleanup/occupied ports, redirect refusal, local URL validation, and skipped checks. CLI help and diff formatting checked. No private app was accessed or modified.
+
+Limits: selectors are suggested, not discovered; app endpoint routing, prompt setup, timing, and assertions still require review. This remains a source-checkout command, not a published package. Next: simplify first-run diagnosis using feedback from independent integrations.

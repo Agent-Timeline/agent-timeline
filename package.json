@@ -23,7 +23,8 @@
     "test:example": "playwright test --config playwright.example.config.ts",
     "proxy": "tsx backend/proxy-cli.ts",
     "test:proxy": "playwright test --config playwright.proxy.config.ts",
-    "run:app": "tsx backend/runner-cli.ts"
+    "run:app": "tsx backend/runner-cli.ts",
+    "init": "tsx backend/init-cli.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

@@ -217,3 +217,7 @@ CLI -- JSON configuration ---------------+--> backend/runner.ts
 The runner validates local URLs, starts one configured proxy, creates a fresh browser context, applies setup actions, observes DOM text, runs timed actions, and checks delivery evidence and assertions. Stop closes browser and proxy and returns an incomplete result. Proxy observations are transport events, not proof of rendering. The workbench polls the same report used by the CLI. One connected run is allowed per backend; separate processes must use distinct proxy ports.
 
 Current limits: CSS selectors, click/fill/select actions, timed text-absence checks, final text-contains checks, and required final delivery evidence. The host app must already be running and route its test endpoint to the proxy. The browser permits only the configured app origin. Arbitrary authentication/reset hooks, saved sessions, protocol adapters beyond NDJSON simulation, and migration of the built-in demo runners remain future work.
+
+## Local setup command
+
+`npm run init -- --app-url URL` generates a validated starter host config using exclusive file creation. It checks local app HTTP reachability without following redirects and temporarily starts the configured proxy for a health check. It does not modify app code, discover selectors, invoke browser actions, or contact the upstream. Setup diagnostics remain separate from runner verdicts; a successful health check does not prove end-to-end routing. See [setup options](RUNNER.md#generate-a-starter-for-your-app).

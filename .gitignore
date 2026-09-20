@@ -9,3 +9,6 @@ test-results/
 .DS_Store
 *.log
 private-integrations/
+
+# Local starter config may contain private app selectors.
+agent-timeline.config.json

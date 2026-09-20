@@ -2,6 +2,36 @@
 
 The CLI and workbench call the same Playwright runner. Your development app runs at its own URL; no iframe is required. Start the app separately and route its development stream endpoint to the local proxy. Keep production routing unchanged.
 
+## Generate a starter for your app
+
+From the Agent Timeline checkout, run:
+
+```sh
+npm run init -- --app-url http://127.0.0.1:3000
+```
+
+This creates `agent-timeline.config.json`, checks the app's HTTP response, and starts a temporary proxy to check its health and port availability. The temporary proxy is stopped afterwards. It does not click app controls or send model/upstream requests. Redirects are reported instead of followed. These are reachability checks, not proof that your app routes streams through the proxy.
+
+Existing files are never overwritten. The default config filename is gitignored in this checkout; custom filenames are not automatically ignored. Use `--out /path/to/your/private/repo/test-config.json` to keep host details with your app. The destination directory must already exist.
+
+Specify existing CSS selectors to reduce manual editing:
+
+```sh
+npm run init -- --app-url http://127.0.0.1:3000 --send-selector '#send' --cancel-selector '#cancel' --response-selector '#response' --evidence-selector '#events'
+```
+
+Without those flags, the starter uses `data-testid` selectors for `send`, `cancel`, `response`, and `events`. These are suggested selectors, not auto-detected controls. Review the generated file before running:
+
+1. Route the app's development stream endpoint to the generated proxy port/path. Simulation uses Agent Timeline NDJSON; it does not automatically adapt your SDK.
+2. Match selectors to your real controls and containers. Add setup/fill actions for a prompt if needed.
+3. Review cancellation and observation timing, forbidden response text, and delivery evidence. The initial example checks `Weekend Atlas` after 700 ms and observes until 2200 ms.
+4. Replace `Stream ended` evidence with an app diagnostic that proves the intended delivery occurred. For aborting transports, review `expectedOutcome` and evidence accordingly.
+5. Run the printed CLI command, or start the workbench with the printed `TIMELINE_RUNNER_CONFIG` command.
+
+Use `--proxy-port` and `--endpoint` to choose the proxy listener, `--upstream` for a fixed local unauthenticated upstream instead of simulation, and `--evidence-text` to customize the diagnostic. `--skip-check` creates the config without network checks when the app is not running. `npm run init -- --help` lists all options.
+
+Init exits 0 when generation and checks succeed (or checks were explicitly skipped), 1 when the config was saved but a reachability check failed, and 2 for invalid input or a write error. A generated config is not a passing test. If checks fail, fix startup/routing or edit the saved config; rerunning init will not overwrite it.
+
 ## Try the synthetic example
 
 Install dependencies and Chromium once:
