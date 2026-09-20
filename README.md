@@ -10,6 +10,8 @@ The local workbench includes an editable event timeline, a streaming provider, a
 
 *Edit event timing, replay AI interactions, and catch late responses after cancellation.*
 
+[Watch the interactive timeline demo (MOV)](docs/videos/agenttimeline2.mov) — drag events, change timing, and replay the cancel-then-late-response scenario.
+
 ## Standalone integration example
 
 Run a small independent chat app with Send, Cancel, and intentionally buggy/fixed behavior. It connects to the provider over HTTP without the workbench. Start `npm run dev:example` alongside `npm run dev`, select **Standalone chat** as the workbench test target, edit timing, and click **Run scenario**. The chat runs in an embedded instance and returns its verdict and observations to the workbench. See the [example setup and tests](examples/chat/README.md).

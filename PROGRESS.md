@@ -176,3 +176,7 @@ Added a gallery timeline with connection, request, and assertion lanes; editable
 Completed time ruler and 1×–16× zoom, content-sized timeline viewport and label boxes, a scenario play/stop control, and received-event emphasis in light and dark modes. Added connection-loss recovery coverage and its editable timeline, including timing validation and regression coverage. Updated README and scenario documentation.
 
 Validation: the latest full `npm run verify` passed 38 tests, backend/frontend type checks, and both production builds. An earlier run encountered incomplete-provider timeouts in two existing gallery tests; the unchanged rerun passed. No runtime changes followed that verification.
+
+## Interactive timeline demo video
+
+Added the supplied `agenttimeline2.mov` recording under `docs/videos/` and linked it near the top of the README. Verified the relative link and copied file. Documentation/media only; no runtime code changed.
