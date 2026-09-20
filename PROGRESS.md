@@ -180,3 +180,37 @@ Validation: the latest full `npm run verify` passed 38 tests, backend/frontend t
 ## Interactive timeline demo video
 
 Added the supplied `agenttimeline2.mov` recording under `docs/videos/` and linked it near the top of the README. Verified the relative link and copied file. Documentation/media only; no runtime code changed.
+
+## Compact recovery lanes
+
+Recovery timeline lanes now size to their event-row counts instead of all reserving 195px. The single-event lane uses 82px, removing unused space while preserving label separation. Browser layout inspection confirmed all event labels fit; `npm run verify` passed all 38 tests, type checks, and both builds.
+
+## Workbench scenario selector
+
+Added a workbench selector for cancellation and connection recovery. Recovery reuses the gallery runner with editable lanes and Run, Stop test, and Replay again controls. Switching unmounts the old runner, aborts its transport, and clears edits/results. Recovery remains limited to the fictional editor without JSON or external-host support. README documents those limits. `npm run verify` passed all 38 tests, type checks, and both builds; a browser smoke check also passed selection, recovery stop/replay, and switching away during an active run.
+
+## Recovery playhead contrast
+
+Changed the recovery playhead to a solid 2px line using the primary text color token for stronger light/dark contrast. Browser checks confirmed both theme colors and solid styling. `npm run verify` passed all 38 tests, type checks, and both builds.
+
+## Recovery replay inspection
+
+Added post-run inspection for recovery: recorded rendered text/status and timestamp-filtered events, a time slider, and pointer/keyboard dragging on the solid playheads. Live runs remain automatic; inspection preserves the final app state and verdict. Reset, timing edits, mode changes, and new runs clear recordings. This is in-memory text/status capture, not screenshot replay or arbitrary app capture. The new regression covers recorded disconnected state, pointer/keyboard seeking, unchanged verdict/output, and reset.
+
+Verification: corrected an initial JSX syntax error; the final `npm run verify` passed all 39 tests, type checks, and both builds.
+
+## Live recovery gradient
+
+Added a trailing gradient synchronized to the recovery playhead during live runs: soft white in dark mode and gray in light mode. Labels stay above the trail, and reduced-motion preferences hide the decorative effect. Visually checked both themes. An accidental stylesheet write was repaired preserving the prior compact-lane and inspection styles; the final `npm run verify` passed all 39 tests, type checks, and both builds.
+
+## Architecture direction: real-app fault testing
+
+Updated the architecture to distinguish the current example adapters and separate runners from the planned iframe-free integration. Specified one shared workbench/CLI runner, host configuration, a supported stream adapter, explicit fault/cancellation semantics, outcome reporting, and implementation acceptance criteria. Interoperability and multi-agent visualization remain planned extensions. Documentation-only update; checked Markdown structure and diff formatting, with no additional runtime changes or test run.
+
+## Architecture: local stream proxy
+
+Made the local stream proxy an explicit planned runtime component, including simulation and configured-upstream forwarding, protocol adapters, fault injection, cancellation/backpressure handling, and one npm API/CLI integration with the runner. Updated the boundary diagram and implementation sequence. Documentation-only change; diff checks passed.
+
+## System overview diagram alignment
+
+Updated the planned system overview ASCII diagram to show the local stream proxy, protocol adapter, simulated/upstream response sources, and separate transport observations and UI assertion evidence. Names now match the detailed proxy architecture. Documentation only; diff formatting checked.
