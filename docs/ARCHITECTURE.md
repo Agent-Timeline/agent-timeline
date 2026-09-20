@@ -1,5 +1,11 @@
 # Architecture specification
 
+## Current implementation
+
+The standalone workbench edits scenarios in memory and sends a validated snapshot with each provider request. A local Node server emits the scheduled stream. The browser drives the demo's cancel control and observes DOM mutations through the configured window. The Playwright suite separately exercises the same demo for headless verification. Both use the scenario schema and provider, but a unified browser/headless runner and external app adapters remain planned.
+
+The workbench reports the last delivered provider event when forbidden text is first observed. Batched DOM updates can combine events, so the highlight is diagnostic context rather than guaranteed causal attribution. Provider event times begin at request receipt; automatic browser actions begin at the start acknowledgement. Real browser scheduling and transport latency are not virtualized.
+
 ## System overview
 
 This diagram specifies the planned implementation. The workbench is a standalone local React + Vite application; it has no Storybook dependency.

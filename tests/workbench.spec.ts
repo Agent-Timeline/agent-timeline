@@ -1,0 +1,64 @@
+import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+const fixture = JSON.parse(readFileSync(new URL('../scenarios/cancel-late-result.json', import.meta.url), 'utf8'));
+test('automatic replay fails in buggy mode, highlights the event, and passes in fixed mode', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Application behavior').selectOption('buggy');
+  await page.getByRole('button', { name: 'Run scenario', exact: true }).click();
+  await expect(page.getByTestId('verdict')).toContainText('FAIL');
+  await expect(page.getByTestId('event-1')).toHaveClass(/event-failed/);
+  await page.getByLabel('Application behavior').selectOption('fixed');
+  await page.getByRole('button', { name: 'Run scenario', exact: true }).click();
+  await expect(page.getByTestId('verdict')).toContainText('PASS');
+  await expect(page.getByRole('status')).toHaveText('Cancelled');
+});
+test('edited timing reaches the provider and validation prevents invalid replay', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Application behavior').selectOption('buggy');
+  await page.getByLabel('Event 2 text', { exact: true }).fill('Edited late result');
+  await page.getByLabel('Text that must stay absent after cancellation').fill('Edited late result');
+  await page.getByLabel('Event 2 time', { exact: true }).fill('950');
+  await page.getByRole('button', { name: 'Run scenario', exact: true }).click();
+  await expect(page.getByTestId('verdict')).toContainText('FAIL');
+  await expect(page.getByTestId('event-log')).toContainText('950ms · text');
+  await expect(page.getByTestId('response')).toContainText('Edited late result');
+  await page.getByLabel('Event 2 time', { exact: true }).fill('2000');
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Run scenario', exact: true })).toBeDisabled();
+});
+test('imports and exports valid scenarios, preserves state on invalid import, and replays errors', async ({ page }) => {
+  await page.goto('/');
+  const custom = { ...fixture, id: 'error-case', events: [{ atMs: 100, type: 'error', message: 'Rate limited' }] };
+  await page.getByLabel('Import scenario file').setInputFiles({ name: 'scenario.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(custom)) });
+  await expect(page.getByLabel('Scenario ID', { exact: true })).toHaveValue('error-case');
+  const downloaded = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export JSON' }).click();
+  const download = await downloaded;
+  expect(JSON.parse(readFileSync((await download.path())!, 'utf8'))).toEqual(custom);
+  await page.getByLabel('Import scenario file').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{bad') });
+  await expect(page.getByRole('alert')).toContainText('Import failed');
+  await expect(page.getByLabel('Scenario ID', { exact: true })).toHaveValue('error-case');
+  await page.getByRole('button', { name: 'Send prompt' }).click();
+  await expect(page.getByRole('status')).toHaveText('Error: Rate limited');
+});
+test('add, remove, sort and reset clean up an automatic run', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '+ Add event', exact: true }).click();
+  await expect(page.getByLabel('Event 3 text', { exact: true })).toHaveValue('New response chunk');
+  await page.getByRole('button', { name: 'Remove event 3', exact: true }).click();
+  await page.getByLabel('Event 1 time', { exact: true }).fill('1200');
+  await expect(page.getByRole('alert')).toBeVisible();
+  await page.getByRole('button', { name: 'Sort events by time' }).click();
+  await expect(page.getByLabel('Event 1 text', { exact: true })).toHaveValue('Weekend Atlas');
+  await page.getByRole('button', { name: 'Run scenario', exact: true }).click();
+  await expect(page.getByTestId('event-log')).toContainText('Provider connected');
+  await page.getByRole('button', { name: 'Reset', exact: true }).click();
+  await page.waitForTimeout(2000);
+  await expect(page.getByTestId('response')).toBeEmpty();
+  await expect(page.getByRole('status')).toHaveText('Idle');
+  await expect(page.getByTestId('verdict')).toContainText('Ready to verify');
+});
+test('server rejects unsupported scenarios before starting a stream', async ({ request }) => {
+  const response = await request.post('/api/generate', { data: { requestId: 'test', scenario: { ...fixture, events: [{ atMs: 0, type: 'unsupported' }] } } });
+  expect(response.status()).toBe(400);
+});
