@@ -59,7 +59,7 @@ A custom Fetch implementation can be passed as `fetch` in connection options, fo
 
 A Node development backend can call the full loopback URL directly. For a browser app on another port, configure its development server to proxy a same-origin route, such as `/timeline-provider`, to `http://127.0.0.1:4318/api/generate`. Preserve the POST body, status, NDJSON content type, streaming delivery, and disconnect cancellation. Set the browser client's endpoint to that same-origin route.
 
-The provider does not enable cross-origin browser access. A direct browser fetch from a different origin is not the supported setup. Proxy configuration depends on the host's server; no framework-specific proxy or external UI configuration is supplied yet. The example above runs in a Node host or a same-origin/proxied browser setup after adjusting the endpoint.
+The provider does not enable cross-origin browser access. A direct browser fetch from a different origin is not the supported setup. Proxy configuration depends on the host's server; the chat example includes a Vite proxy and an opt-in workbench adapter; other hosts need their own setup. The example above runs in a Node host or a same-origin/proxied browser setup after adjusting the endpoint.
 
 ## Wire protocol
 
@@ -92,5 +92,5 @@ For a late-arrival race test, invalidate the request in the application's state 
 - No live model calls, API keys, prompt interpretation, production credentials, or automatic app discovery.
 - Fixed scripted output is independent of the user's live prompt. Do not forward production request bodies or credentials; the endpoint only needs synthetic scenario data and a request ID.
 - No provider-specific SDK compatibility, tool calls, audio, or cancellation acknowledgements.
-- No external-app button selectors, automated UI actions, or assertions yet. The reusable provider connection is the first integration layer.
+- The standalone chat adapter connects its Send/Cancel controls and response assertion to the workbench. There is no general host-selector configuration or universal external-app runner yet.
 - App configuration and app-specific scenarios can remain in a separate private repository. Nothing in the connection requires publishing them.

@@ -4,7 +4,7 @@ Last updated: September 19, 2026.
 
 ## Current milestone
 
-The standalone local workbench can edit and replay a cancellation scenario against the built-in demo, detect a late-result defect, and verify the corrected behavior. A separate scenario gallery now covers seven additional races in a fictional draft editor. External application integration remains the next milestone.
+The standalone local workbench can edit and replay a cancellation scenario against the built-in demo, detect a late-result defect, and verify the corrected behavior. A separate scenario gallery now covers seven additional races in a fictional draft editor. The workbench now drives the standalone chat through its example-specific adapter. General external-host configuration remains future work.
 
 ## Completed
 
@@ -23,13 +23,22 @@ The standalone local workbench can edit and replay a cancellation scenario again
 - [x] Headless verification commands for the built-in demo.
 - [x] Desktop visual review and mobile overflow check.
 
-## Latest improvement: standalone chat integration example
+## Latest improvement: workbench drives standalone chat
+
+- Added a target selector and embedded independent chat instance. Edited scenarios and behavior are sent as immutable run snapshots; verdicts, observed timings, and logs return to the workbench.
+- The opt-in example adapter drives real Send/Cancel controls, observes rendered output, checks provider delivery, and handles reset and stale replies.
+- Messages are restricted by source/origin; results are correlated by run ID. The backend advertises only a configured loopback example URL.
+- Added integration coverage for edited prompt/timing/content, buggy/fixed verdicts, event highlighting, reset, and provider failure.
+- Verification: `npm run verify` passed (7 unit tests, 2 provider API tests, 19 workbench/gallery/integration tests, 3 standalone tests; both type checks and builds). A visible browser run against the embedded chat returned PASS and the layout was reviewed.
+- This is a specific example adapter, not universal host automation. It requires framing support and the example log contract. Browser and headless tests share this bridge; the old verification CLI remains demo-specific.
+
+## Previous improvement: standalone chat integration example
 
 - Added an independent plain-TypeScript chat app in `examples/chat`, using only the shared provider client and synthetic data. It imports no workbench UI or proprietary application code.
 - The app has real Send/Cancel/Reset controls, request identity checks, scripted streaming responses, and fixed/buggy cancellation modes. Vite serves it separately on port 4319 and proxies to the provider on 4318.
 - Added developer setup instructions and three browser tests: fixed cancellation, intentional buggy cancellation, and reset followed by a successful request.
 - `npm run verify` passed: 7 unit tests, 2 API tests, 16 workbench/gallery tests, 3 example tests, type checks, and both frontend builds. The browser preview was visually reviewed.
-- Next: connect workbench scenario editing and replay to the standalone app, with results returned to the workbench. The example currently uses its own code-defined scenario.
+- This milestone originally used a code-defined scenario; workbench control is now implemented above.
 - Limits: source-level client import, one outstanding request, preset response content, no universal host configuration or workbench-driven external-app automation. Tests use actual browser controls and observe post-cancel DOM mutations.
 
 ## Previous improvement: verification commands

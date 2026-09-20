@@ -27,9 +27,23 @@ Open http://127.0.0.1:4319. The provider runs on port 4318. If `npm run dev` is 
 
 Send is disabled until transport finishes, even after cancellation. This example covers one outstanding request; overlapping retries are covered separately in the gallery.
 
-## Current milestone
+## Run from the workbench
 
-The example connects to the provider, but the workbench timeline does not yet control this app. Its scenario is defined in `main.ts`; its event log appears inside the example. The next integration milestone is to run an edited workbench scenario against this app and return verification results to the workbench.
+Start `npm run dev` (workbench and provider) and `npm run dev:example` in separate terminals. In the workbench on port 4317:
+
+1. Select **Standalone chat** under **Test target**.
+2. Wait for **Connected**. The chat appears in an iframe as a fresh instance; an already-open chat tab is independent.
+3. Edit prompt, provider event timing/text, cancellation time, observation window, and forbidden text.
+4. Choose Buggy or Fixed, then click **Run scenario**.
+5. Watch the real controls and response in the embedded chat. The verdict, observed events, and app log return to the workbench after observation finishes.
+
+The bridge supplies an immutable scenario snapshot to the provider call and clicks the app's real Send and Cancel controls. App request handling and rendering stay real. Reset aborts the embedded app's pending transport and discards old replies. Outside workbench mode, the app continues using its original preset.
+
+`workbench-bridge.ts` is an opt-in, example-specific adapter enabled only with `?timeline` when embedded. It accepts messages only from its parent at loopback workbench origins on ports 4317 or 4417. The workbench validates the reply's source, origin, and run ID. This is not an arbitrary-host runner; another app needs its own adapter and must permit framing.
+
+Cancel and observation timers begin when the adapter observes the provider-connected log entry. Observations use browser request-submission-relative timestamps. The adapter reads the example's log to check all provider events arrived and the stream ended, and uses a MutationObserver on the actual rendered response for the assertion. No provider cancellation acknowledgement is inferred. Timing remains subject to browser scheduling; highlighted event attribution is diagnostic, not proof of cause.
+
+If the app is absent, the workbench explains how to start it. Missing provider activity, unavailable cancellation, or an incomplete stream produces RUN ERROR. The workbench target defaults to port 4319; set `TIMELINE_EXAMPLE_PORT` on the backend for another loopback example port.
 
 ## How the connection works
 
@@ -64,4 +78,4 @@ Tests start a fresh provider on port 4438 and example on 4439; those ports must 
 
 ## Using this as a starting point
 
-Keep your app's real rendering and state handling, adapt the client calls and development proxy to your environment, and retain app-specific configuration in your own repository. See [the provider guide](../../docs/PROVIDER.md). This example supplies app-specific Playwright tests, not a general external-app runner or a workbench connection wizard.
+Keep your app's real rendering and state handling, adapt the client calls and development proxy to your environment, and retain app-specific configuration in your own repository. See [the provider guide](../../docs/PROVIDER.md). This example supplies app-specific Playwright tests, not a general external-app runner or a connection wizard for arbitrary apps.

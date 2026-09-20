@@ -1,6 +1,8 @@
 import { createTimelineProvider } from '../../client/provider';
 import type { Scenario } from '../../shared/engine';
 import './style.css';
+import { connectWorkbench } from './workbench-bridge';
+let workbenchScenario: Scenario | null = null;
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const form = el<HTMLFormElement>('chat'), prompt = el<HTMLTextAreaElement>('prompt');
 const mode = el<HTMLSelectElement>('mode'), send = el<HTMLButtonElement>('send'), cancel = el<HTMLButtonElement>('cancel');
@@ -20,7 +22,7 @@ form.addEventListener('submit', async event => {
   const controller = new AbortController(); transport = controller; active = requestId;
   send.disabled = mode.disabled = prompt.disabled = true; cancel.disabled = false;
   response.textContent = ''; events.textContent = ''; status.textContent = 'Connecting';
-  const scenario: Scenario = {
+  const scenario: Scenario = workbenchScenario ?? {
     version: 1, id: 'example-chat-cancel', prompt: prompt.value.trim(), cancelAtMs: 700, observeUntilMs: 1800,
     events: [{ atMs: 100, type: 'text', text: 'A possible title is ' }, { atMs: 1100, type: 'text', text: 'Weekend Atlas' }, { atMs: 1300, type: 'complete' }],
     assertion: { type: 'textAbsentAfterCancel', text: 'Weekend Atlas' },
@@ -42,3 +44,5 @@ form.addEventListener('submit', async event => {
   } finally { if (run === epoch) { active = null; ready(); } }
 });
 window.addEventListener('pagehide', () => transport?.abort());
+
+connectWorkbench(scenario => { workbenchScenario = scenario; });

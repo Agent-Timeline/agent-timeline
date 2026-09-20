@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-The standalone workbench edits scenarios in memory and sends a validated snapshot with each provider request. A local Node server emits the scheduled stream. The browser drives the demo's cancel control and observes DOM mutations through the configured window. The Playwright suite separately exercises the same demo for headless verification. Both use the scenario schema and provider, but a unified browser/headless runner and external app adapters remain planned.
+The standalone workbench edits scenarios in memory and sends a validated snapshot with each provider request. A local Node server emits the scheduled stream. The browser drives the demo's cancel control and observes DOM mutations through the configured window. The Playwright suite separately exercises the same demo for headless verification. Both use the scenario schema and provider, but the standalone chat has an example-specific iframe adapter; a unified browser/headless runner and arbitrary host adapters remain planned.
 
 The workbench reports the last delivered provider event when forbidden text is first observed. Batched DOM updates can combine events, so the highlight is diagnostic context rather than guaranteed causal attribution. Provider event times begin at request receipt; automatic browser actions begin at the start acknowledgement. Real browser scheduling and transport latency are not virtualized.
 
@@ -22,6 +22,20 @@ shared/ scenario validation and replay
 ```
 
 `backend/server.ts` imports only Node modules and shared code. It serves the provider API and returns JSON 404 for other paths. `frontend/vite.config.ts` serves the UI and proxies API traffic. `client/provider.ts` has no frontend dependency and uses a type-only shared import. The backend runs alone with `npm run dev:backend`; the frontend runs with `npm run dev:frontend`; `npm run dev` supervises both processes. Both bind to loopback. Root package dependencies remain shared. The frontend build is separate from the backend and requires API routing when hosted.
+
+## Implemented standalone chat control
+
+```text
+Workbench :4317 -- scenario + mode + run ID --> Chat iframe :4319
+               <-- verdict + observations ---        |
+                                               Real Send/Cancel
+                                                      |
+                                               Client + dev proxy
+                                                      |
+                                               Provider :4318
+```
+
+The iframe adapter is enabled only for an embedded `?timeline` instance and checks the parent origin/source. The workbench checks reply origin/source and run ID. The adapter changes only the supplied provider scenario and drives real app controls; it observes the DOM and app event log. Standalone tabs are not remotely driven. Browser tests exercise this same connection. `GET /api/example-target` returns the loopback example URL configured by `TIMELINE_EXAMPLE_PORT` (default 4319).
 
 ## System overview
 

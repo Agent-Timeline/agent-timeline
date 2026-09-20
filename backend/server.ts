@@ -3,6 +3,12 @@ import { readFile } from 'node:fs/promises';
 import { parseScenario, replay } from '../shared/engine.js';
 const scenario = parseScenario(JSON.parse(await readFile(new URL('../scenarios/cancel-late-result.json', import.meta.url), 'utf8')));
 const server = createServer(async (req, res) => {
+  if (req.url === '/api/example-target' && req.method === 'GET') {
+    const examplePort = Number(process.env.TIMELINE_EXAMPLE_PORT ?? 4319);
+    if (!Number.isInteger(examplePort) || examplePort < 1 || examplePort > 65535) { res.writeHead(500); res.end(); return; }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ url: `http://127.0.0.1:${examplePort}/?timeline` })); return;
+  }
   if (req.url === '/api/scenario' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify(scenario)); return;

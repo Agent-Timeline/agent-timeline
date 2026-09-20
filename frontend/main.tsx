@@ -4,11 +4,14 @@ import { parseScenario, type Scenario } from '../shared/engine';
 import { TimelineEditor } from './TimelineEditor';
 import './style.css';
 import { createTimelineProvider } from '../client/provider';
+import { ExternalChat, type ExternalChatHandle } from './ExternalChat';
 import { ScenarioGallery } from './ScenarioGallery';
 type Observation = { atMs: number; kind: 'cancel' | 'arrival'; label: string };
 type Result = { kind: 'pass' | 'fail' | 'error'; message: string; eventIndex: number | null };
 function App() {
   const [scenario, setScenario] = useState<Scenario>();
+  const [target, setTarget] = useState('demo');
+  const external = useRef<ExternalChatHandle>(null);
   const [mode, setMode] = useState('fixed');
   const [status, setStatus] = useState('Idle');
   const [text, setText] = useState('');
@@ -29,13 +32,14 @@ function App() {
   const append = (s: string) => setLog(old => [...old, s]);
   const cleanup = () => { timers.current.forEach(clearTimeout); timers.current = []; observer.current?.disconnect(); observer.current = null; cancelHook.current = null; };
   useEffect(() => { fetch('/api/scenario').then(r => r.json()).then(data => setScenario(parseScenario(data))).catch(() => setFileError('Failed to load scenario')); return () => { cleanup(); transport.current?.abort(); }; }, []);
-  const reset = () => { generation.current++; cleanup(); transport.current?.abort(); active.current = null; setText(''); setLog([]); setObservations([]); setStatus('Idle'); setBusy(false); setResult(null); };
+  const reset = () => { external.current?.reset(); generation.current++; cleanup(); transport.current?.abort(); active.current = null; setText(''); setLog([]); setObservations([]); setStatus('Idle'); setBusy(false); setResult(null); };
   let validation = '';
   if (scenario) { try { parseScenario(scenario); } catch (error) { validation = String(error).replace('Error: ', ''); } }
   const edit = (next: Scenario) => { reset(); setFileError(''); setScenario(next); };
   const cancel = () => { active.current = null; setStatus('Cancelled'); append('User cancelled · transport stays open to exercise late delivery'); cancelHook.current?.(); };
   const submit = async (automatic = false) => {
     if (busy || !scenario || validation) return;
+    if (target === 'external' && automatic) { setResult(null); setLog([]); setObservations([]); external.current?.run(); return; }
     cleanup();
     const run = parseScenario(structuredClone(scenario));
     const epoch = ++generation.current;
@@ -106,10 +110,10 @@ function App() {
     finally { if (importInput.current) importInput.current.value = ''; }
   };
   return <main><header><span className="eyebrow">AGENT TIMELINE / LOCAL WORKBENCH</span><h1>Make the race repeatable.</h1><a href="/?gallery">Explore seven more race scenarios →</a><p>Edit the events. Replay the interaction. Verify what stays on screen.</p></header>
-    <section className="controls"><label>Application behavior <select aria-label="Application behavior" value={mode} disabled={busy} onChange={e => { reset(); setMode(e.target.value); }}><option value="fixed">Fixed · reject cancelled results</option><option value="buggy">Buggy · accept every result</option></select></label><div className="actions"><button disabled={busy} onClick={() => importInput.current?.click()}>Import JSON</button><input ref={importInput} aria-label="Import scenario file" type="file" accept=".json,application/json" hidden onChange={e => void importScenario(e.target.files?.[0])}/><button disabled={busy || !scenario || !!validation} onClick={exportScenario}>Export JSON</button><button onClick={reset}>Reset</button><button className="primary" disabled={busy || !scenario || !!validation} onClick={() => void submit(true)}>{busy ? 'Running…' : 'Run scenario'}</button></div></section>
+    <section className="controls"><label>Test target<select aria-label="Test target" value={target} disabled={busy} onChange={e => { reset(); setTarget(e.target.value); }}><option value="demo">Built-in demo</option><option value="external">Standalone chat</option></select></label><label>Application behavior <select aria-label="Application behavior" value={mode} disabled={busy} onChange={e => { reset(); setMode(e.target.value); }}><option value="fixed">Fixed · reject cancelled results</option><option value="buggy">Buggy · accept every result</option></select></label><div className="actions"><button disabled={busy} onClick={() => importInput.current?.click()}>Import JSON</button><input ref={importInput} aria-label="Import scenario file" type="file" accept=".json,application/json" hidden onChange={e => void importScenario(e.target.files?.[0])}/><button disabled={busy || !scenario || !!validation} onClick={exportScenario}>Export JSON</button><button onClick={reset}>Reset</button><button className="primary" disabled={busy || !scenario || !!validation} onClick={() => void submit(true)}>{busy ? 'Running…' : 'Run scenario'}</button></div></section>
     {(validation || fileError) && <p role="alert" className="validation">{fileError || validation}</p>}
     <div className="workbench-grid">{scenario && <TimelineEditor scenario={scenario} onChange={edit} disabled={busy} failedEvent={result?.eventIndex ?? null}/>}
-    <aside><section className="panel"><span className="eyebrow">REAL UI / SIMULATED PROVIDER</span><h2>Demo application</h2><p className="prompt">{scenario?.prompt || 'Loading scenario…'}</p><div className="actions"><button disabled={!scenario || busy || !!validation} onClick={() => void submit(false)}>Send prompt</button><button ref={cancelButton} disabled={!busy || status === 'Cancelled'} onClick={cancel}>Cancel request</button></div><p role="status">{status}</p><div ref={responseNode} data-testid="response" className="response">{text}</div></section>
+    <aside>{target === 'external' ? <ExternalChat ref={external} scenario={scenario} mode={mode} onBusy={setBusy} onResult={value => { setResult(value); setObservations(value.observations); setLog(value.log.split('\n')); }}/> : <section className="panel"><span className="eyebrow">REAL UI / SIMULATED PROVIDER</span><h2>Demo application</h2><p className="prompt">{scenario?.prompt || 'Loading scenario…'}</p><div className="actions"><button disabled={!scenario || busy || !!validation} onClick={() => void submit(false)}>Send prompt</button><button ref={cancelButton} disabled={!busy || status === 'Cancelled'} onClick={cancel}>Cancel request</button></div><p role="status">{status}</p><div ref={responseNode} data-testid="response" className="response">{text}</div></section>}
     <section className={`panel verdict ${result?.kind || ''}`} aria-live="polite" data-testid="verdict"><h2>{result ? result.kind === 'pass' ? 'PASS' : result.kind === 'fail' ? 'FAIL' : 'RUN ERROR' : busy ? 'Observing…' : 'Ready to verify'}</h2><p>{result?.message || 'Run the scenario to cancel automatically and check for forbidden text throughout the observation window.'}</p></section></aside></div>
     <section className="panel"><h2>Observed interaction timeline</h2><p className="hint">Browser receipt times measured from request submission. Cancellation is local; this provider sends no cancellation acknowledgement. Accepted events are handled by the app; the verdict checks what actually appears.</p><ol data-testid="observed-timeline" className="observed-timeline">{observations.map((event, index) => <li key={index} className={`observed-${event.kind}`}><code>{event.atMs} ms</code><span>{event.label}</span></li>)}</ol>{!observations.length && <p>Run a scenario to see cancellation and response arrivals.</p>}</section>
     <section className="panel"><h2>Event log</h2><pre data-testid="event-log">{log.join('\n') || 'Waiting for a request.'}</pre></section><footer>Local development · No live model · Provider offsets start at request receipt; browser actions start at acknowledgement.</footer></main>;

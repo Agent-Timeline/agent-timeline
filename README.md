@@ -4,7 +4,7 @@ Reproduce the exact moment your AI interface breaks, then turn it into a regress
 
 Agent Timeline is an open-source project for reproducing timing bugs in AI interfaces: streaming responses, cancellations, retries, and delayed results.
 
-The local workbench includes an editable event timeline, a streaming provider, automatic cancellation replay, and pass/fail assertions against a real demo chat. A reusable TypeScript client connects to the simulated provider; external-app UI automation is not implemented yet.
+The local workbench includes an editable event timeline, a streaming provider, automatic cancellation replay, and pass/fail assertions against a real demo chat. A reusable TypeScript client connects to the simulated provider; the standalone chat can now be controlled from the workbench using its example-specific adapter. Arbitrary app adapters remain future work.
 
 ![Agent Timeline workbench with an editable event timeline and demo application](docs/images/workbench.png)
 
@@ -12,7 +12,7 @@ The local workbench includes an editable event timeline, a streaming provider, a
 
 ## Standalone integration example
 
-Run a small independent chat app with Send, Cancel, and intentionally buggy/fixed behavior. It connects to the provider over HTTP without the workbench. See the [example setup and tests](examples/chat/README.md).
+Run a small independent chat app with Send, Cancel, and intentionally buggy/fixed behavior. It connects to the provider over HTTP without the workbench. Start `npm run dev:example` alongside `npm run dev`, select **Standalone chat** as the workbench test target, edit timing, and click **Run scenario**. The chat runs in an embedded instance and returns its verdict and observations to the workbench. See the [example setup and tests](examples/chat/README.md).
 
 ## Run locally
 

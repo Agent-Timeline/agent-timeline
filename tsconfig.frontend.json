@@ -10,6 +10,7 @@
     "playwright.frontend.config.ts",
     "examples/chat",
     "tests/example-chat.spec.ts",
-    "playwright.example.config.ts"
+    "playwright.example.config.ts",
+    "tests/external-chat.spec.ts"
   ]
 }
