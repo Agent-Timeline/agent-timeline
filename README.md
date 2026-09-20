@@ -51,6 +51,7 @@ Scenarios supply the prompt, provider events, cancellation delay, observation du
 
 Simulate AI provider responses while the application’s real rendering, state, and persistence run. Control event timing, replay failures, and verify expected behavior with assertions.
 
+- [Progress and next steps](PROGRESS.md)
 - [Implementation scope](docs/MVP.md)
 - [Architecture specification](docs/ARCHITECTURE.md)
 

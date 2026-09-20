@@ -5,3 +5,5 @@ Keep public examples synthetic. Do not copy proprietary source code, assets, tra
 Read README.md and docs/MVP.md before implementation. Preserve real application behavior while simulating provider responses. Keep examples fictional. Clearly distinguish proposed features from implemented ones. Do not publish or choose a license holder without the owner's direction.
 
 Build a standalone local React + Vite workbench. Do not add Storybook as a dependency or require it for host application integration.
+
+Update PROGRESS.md with each implementation milestone, including completed work, actual verification results, current limits, and next steps.
