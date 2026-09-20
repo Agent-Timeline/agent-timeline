@@ -1,6 +1,6 @@
 # Scenario reference
 
-This document describes the implemented cancellation workbench and seven gallery presets. All examples use fictional content and real demo UI state with simulated provider responses.
+This document describes the implemented cancellation workbench and eight gallery presets. All examples use fictional content and real demo UI state with simulated provider responses.
 
 ## Running the scenarios
 
@@ -187,4 +187,20 @@ ID: `duplicate` — gallery.
 
 ## Not implemented
 
-External host adapters, gallery JSON import/export, an editable multi-request timeline, persistent save/load checks, real route reload scenarios, cancellation acknowledgements, and voice interactions remain outside current coverage. These are possible extensions, not implemented scenarios or release commitments.
+External host adapters, gallery JSON import/export, a general-purpose editable multi-request timeline, persistent save/load checks, real route reload scenarios, cancellation acknowledgements, and voice interactions remain outside current coverage. These are possible extensions, not implemented scenarios or release commitments.
+
+## Connection loss and recovery
+
+**Problem:** an interrupted stream may leave the app loading indefinitely or duplicate partial text on retry.
+
+**Sequence:** submit at 0 ms; first text at provider offset 100 ms; abort the client transport at 400 ms; check disconnected state at 700 ms; restore the simulated connection at 900 ms; explicitly retry at 1000 ms. The retry emits a full replacement response at offset 200 ms and completes at offset 300 ms. Observe through 1800 ms.
+
+**Expected behavior:** preserve `Draft` while disconnected, show Disconnected, then replace the partial response with `Draft recovered` and reach Completed. Requests are blocked while the simulated connection is unavailable.
+
+**Assertions:** partial text and Disconnected at the checkpoint; no `DraftDraft` or `abandoned` output during observation; exact final text and Completed; exactly three delivered provider events across both requests, with no pending requests or unexpected transport errors. Buggy mode retains the wrong disconnected status and appends the retry to partial text.
+
+**Limitations:** this aborts a real fetch stream through a simulated application connection control; it does not change browser/network connectivity. Recovery is an explicit full retry, not stream resumption. No server-side cancellation, durable resume cursor, or retry-backoff verification.
+
+### Editing recovery timing
+
+Connection recovery now has a gallery timeline with connection actions, two request lanes, and assertions. Timing fields update the schedule and runner; Restore recovery timings restores the preset. The abandoned first-stream events are scheduled at observation-end minus 1 ms and observation-end, and should be aborted before arrival. Request 2 offsets are derived from the retry start; browser/provider scheduling remains approximate. Invalid event order disables Run. Edits are in memory only; this editor does not yet import/export multi-request JSON or drive arbitrary external apps.

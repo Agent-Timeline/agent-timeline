@@ -138,3 +138,41 @@ Public workbench now supports Stop test and Replay again. Stop aborts the transp
 ## Stacked timeline labels
 
 Public markers now have dedicated label rows, ordered by time, with right-extending labels and vertical connectors. Equal timestamps share a connector path. A fixed 290px viewport scrolls for larger sets; its height does not change during edits or runs. This first layout deliberately uses one row per event to avoid crossing connectors. Browser checks confirmed equal-time labels do not overlap and viewport height remains stable. Initial verification exposed a drag test using offscreen coordinates; after scrolling markers into view, npm run verify passed all 36 tests, type checks, and both builds.
+
+## Time ruler and horizontal zoom
+
+Added adaptive millisecond ticks, zoom from 1× to 16×, Fit timeline, and horizontal scrolling to inspect ranges. Zoom changes visual scale without changing scenario times. Label stacks still scroll vertically; this does not introduce event virtualization or clustering for thousand-event scenarios. Verification: npm run verify passed all 36 tests, type checks, and both builds. Browser smoke checks confirmed ticks, zoom scaling, unchanged event timing, and Fit timeline; the ruler was visually inspected.
+
+## Connection recovery gallery scenario
+
+Added simulated connection loss by aborting the active client stream, preserving partial content, restoring connection, and explicitly retrying. Checks intermediate disconnected state, duplicate/stale output, final Completed state, and expected delivery count. No browser-wide offline or stream-resume claim. Verification: initial full run had an existing out-of-order test time out while observing; an unchanged full rerun passed all 37 tests, type checks, and both builds. Recovery is covered by the gallery regression in buggy and fixed modes.
+
+## Desktop timeline height
+
+Expanded the public timeline viewport to follow desktop viewport height (180px allowance, 330–1000px bounds), with a smaller mobile height. Event count and dragging do not change the outer height. Verification: npm run verify passed all 37 tests, type checks, and both builds.
+
+## Content-sized timeline viewport
+
+Removed the forced desktop height: the box now sizes to its event-label content and only scrolls once it reaches the responsive maximum height. Small scenarios no longer leave a large empty area. Height remains stable when timing changes because row count stays constant. Verification: npm run verify passed all 37 tests, type checks, and both builds.
+
+## Content-sized marker labels
+
+Timeline label boxes now fit their label and millisecond text rather than reserving a fixed 132px width. Stacked rows and connector positions are unchanged. Verification: npm run verify passed all 37 tests, type checks, and both builds.
+
+## Scenario play control
+
+Added an accessible play button beside the scenario heading, wired to the same run/stop handlers as the main controls. During a run it stops the test; the stop icon appears on hover/focus and remains visible on touch devices. Invalid scenarios disable play. Verification: an initial run was disrupted by a hot reload during an accessibility-label edit; the settled-code rerun passed all 37 tests, type checks, and both builds. Browser smoke check confirmed play, hover-stop icon, and incomplete verdict.
+
+## Received-event label emphasis
+
+Observed markers now give their label boxes a darker surface in light mode and a lighter surface in dark mode. This uses the same received state as the checkmark; scheduled time alone does not trigger it. Verification: npm run verify passed all 37 tests, type checks, and both builds. Browser checks confirmed the background change in light and dark modes.
+
+## Editable connection-recovery timeline
+
+Added a gallery timeline with connection, request, and assertion lanes; editable timing fields drive the real gallery runner. Planned response positions are distinguished from observed arrivals. Validation blocks invalid ordering; editing resets prior results. This is a recovery-specific editor, not a portable multi-request JSON format or standalone-host integration. Verification: npm run verify passed all 38 tests, type checks, and both builds on an unchanged rerun. The first run hit incomplete-provider timeouts in two existing gallery cases. The recovery regression verifies editable timing, a passing run, invalid-order blocking, and restoring defaults; the timeline was visually inspected.
+
+## Public update — September 20, 2026
+
+Completed time ruler and 1×–16× zoom, content-sized timeline viewport and label boxes, a scenario play/stop control, and received-event emphasis in light and dark modes. Added connection-loss recovery coverage and its editable timeline, including timing validation and regression coverage. Updated README and scenario documentation.
+
+Validation: the latest full `npm run verify` passed 38 tests, backend/frontend type checks, and both production builds. An earlier run encountered incomplete-provider timeouts in two existing gallery tests; the unchanged rerun passed. No runtime changes followed that verification.

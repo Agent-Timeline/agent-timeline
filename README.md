@@ -105,7 +105,7 @@ Licensed under the [MIT License](LICENSE).
 
 ## Scenario gallery
 
-Open **Explore seven more race scenarios** in the workbench, or visit `http://127.0.0.1:4317/?gallery`.
+Open **Explore more race scenarios** in the workbench, or visit `http://127.0.0.1:4317/?gallery`.
 
 Choose a scenario and run it in **Buggy** mode to reproduce the defect, then **Fixed** mode to verify the correction:
 
@@ -136,3 +136,11 @@ Timeline labels use separate rows ordered by timestamp. Vertical connectors pres
 ### Light and dark mode
 
 Use the theme toggle at the top of the workbench or gallery. The initial theme follows your system preference; your selection is saved locally in your browser. The embedded standalone chat uses its own styling.
+
+### Time ruler and zoom
+
+Adaptive tick marks show milliseconds below the timeline. Use **Zoom in** or **Zoom out** (1×–16×), scroll horizontally to inspect a time range, and choose **Fit timeline** to restore the full scale. Zoom does not edit event timing. Label rows still scroll vertically; large scenarios are not clustered or virtualized.
+
+The gallery includes **Connection loss and recovery**: an active stream is aborted, partial text is checked while disconnected, and a restored connection permits an explicit retry. Assertions check replacement rather than duplicated output and a completed final state. This simulates connection loss through client transport abortion; it does not put the browser offline or resume a stream.
+
+The connection-recovery gallery now includes **Shape the recovery sequence**, with editable action, response, and assertion timings. Run gallery scenario executes those timings against the fictional editor. The lanes show planned timing; the event log and verdict report actual behavior. This recovery-specific editor does not change the version-1 import/export format.
