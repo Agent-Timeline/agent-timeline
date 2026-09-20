@@ -10,6 +10,10 @@ The local workbench includes an editable event timeline, a streaming provider, a
 
 *Edit event timing, replay AI interactions, and catch late responses after cancellation.*
 
+## Standalone integration example
+
+Run a small independent chat app with Send, Cancel, and intentionally buggy/fixed behavior. It connects to the provider over HTTP without the workbench. See the [example setup and tests](examples/chat/README.md).
+
 ## Run locally
 
 Requires Node.js 22.12 or newer.
@@ -65,7 +69,7 @@ npm run verify:buggy
 `npm run verify` is the readiness check: it runs both commands below and stops on failure.
 
 - `npm run verify:backend`: backend/client type checks, engine/client unit tests, and direct HTTP provider tests. Starts only the backend on port 4428; no frontend or browser is required.
-- `npm run verify:frontend`: frontend type checks, production build, and browser tests. Starts a fresh frontend on port 4417 and its provider on port 4418.
+- `npm run verify:frontend`: frontend/example type checks, production builds, and browser tests. Starts a fresh frontend on port 4417 and its provider on port 4418.
 
 Verification owns these temporary servers and shuts them down afterward. Reserved ports must be free; verification never reuses a running development server. Install Playwright Chromium before frontend verification. `npm run check` remains available as the earlier development check and does not build the frontend.
 

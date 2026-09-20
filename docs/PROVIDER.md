@@ -2,6 +2,10 @@
 
 The reusable TypeScript client is [client/provider.ts](../client/provider.ts). It works in modern browsers and Node.js using Fetch and async iteration, without React or a provider SDK. This is a source-level integration with Agent Timeline's custom NDJSON protocol, not an OpenAI-compatible endpoint or a published npm package.
 
+## Browser example
+
+The [standalone chat app](../examples/chat/README.md) demonstrates a working same-origin development proxy, real Send/Cancel controls, and app-specific browser assertions. Run it independently of the workbench.
+
 ## Try a separate consumer
 
 Start only the provider with `npm run dev:backend` (port 4318); no frontend process is required. In another terminal at the repository root:

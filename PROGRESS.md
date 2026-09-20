@@ -23,7 +23,16 @@ The standalone local workbench can edit and replay a cancellation scenario again
 - [x] Headless verification commands for the built-in demo.
 - [x] Desktop visual review and mobile overflow check.
 
-## Latest improvement: verification commands
+## Latest improvement: standalone chat integration example
+
+- Added an independent plain-TypeScript chat app in `examples/chat`, using only the shared provider client and synthetic data. It imports no workbench UI or proprietary application code.
+- The app has real Send/Cancel/Reset controls, request identity checks, scripted streaming responses, and fixed/buggy cancellation modes. Vite serves it separately on port 4319 and proxies to the provider on 4318.
+- Added developer setup instructions and three browser tests: fixed cancellation, intentional buggy cancellation, and reset followed by a successful request.
+- `npm run verify` passed: 7 unit tests, 2 API tests, 16 workbench/gallery tests, 3 example tests, type checks, and both frontend builds. The browser preview was visually reviewed.
+- Next: connect workbench scenario editing and replay to the standalone app, with results returned to the workbench. The example currently uses its own code-defined scenario.
+- Limits: source-level client import, one outstanding request, preset response content, no universal host configuration or workbench-driven external-app automation. Tests use actual browser controls and observe post-cancel DOM mutations.
+
+## Previous improvement: verification commands
 
 - Added `npm run verify`, combining `verify:backend` and `verify:frontend` with failure propagation.
 - Backend checks use their own TypeScript scope, engine/client unit tests, and direct API tests against a fresh backend on port 4428. They start no frontend and launch no browser.

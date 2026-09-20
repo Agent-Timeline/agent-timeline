@@ -7,6 +7,9 @@
     "tests/cancellation.spec.ts",
     "tests/gallery.spec.ts",
     "tests/workbench.spec.ts",
-    "playwright.frontend.config.ts"
+    "playwright.frontend.config.ts",
+    "examples/chat",
+    "tests/example-chat.spec.ts",
+    "playwright.example.config.ts"
   ]
 }
