@@ -50,3 +50,24 @@ test('provider failure cannot become a passing external run', async ({ page }) =
   await page.getByRole('button', { name: 'Run scenario', exact: true }).click();
   await expect(page.getByTestId('verdict')).toContainText('RUN ERROR', { timeout: 15000 });
 });
+
+for (const target of ['demo', 'external']) test(`${target}: live playhead and received markers update before verdict and reset`, async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Test target').selectOption(target);
+  if (target === 'external') await expect(page.getByText('Connected. Run the edited scenario against this app.')).toBeVisible();
+  await page.getByLabel('Observe until (ms)', { exact: true }).fill('3500');
+  await page.getByRole('button', { name: 'Run scenario', exact: true }).click();
+  await expect(page.getByTestId('marker-0')).toHaveAttribute('data-received', 'true');
+  await expect(page.getByTestId('playhead')).toBeVisible();
+  await expect.poll(async () => Number(await page.getByTestId('elapsed-time').textContent())).toBeGreaterThan(100);
+  await expect(page.getByTestId('marker--1')).toHaveAttribute('data-received', 'true');
+  await expect(page.getByTestId('observed-timeline')).toContainText('Cancel requested');
+  await expect(page.getByTestId('marker-1')).toHaveAttribute('data-received', 'true');
+  await expect(page.getByTestId('verdict')).toContainText('Observing');
+  await page.getByRole('button', { name: 'Reset', exact: true }).click();
+  await expect(page.getByTestId('elapsed-time')).toHaveText('0');
+  await expect(page.getByTestId('playhead')).toHaveCount(0);
+  await expect(page.getByTestId('marker-0')).toHaveAttribute('data-received', 'false');
+  await page.waitForTimeout(400);
+  await expect(page.getByTestId('elapsed-time')).toHaveText('0');
+});

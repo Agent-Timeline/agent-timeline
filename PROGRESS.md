@@ -23,7 +23,16 @@ The standalone local workbench can edit and replay a cancellation scenario again
 - [x] Headless verification commands for the built-in demo.
 - [x] Desktop visual review and mobile overflow check.
 
-## Latest improvement: workbench drives standalone chat
+## Latest improvement: live replay feedback
+
+- Added a moving playhead and elapsed-time readout anchored to observed provider connection for both built-in and standalone targets.
+- Provider markers gain checkmarks only after receipt; cancellation is highlighted after the real action. Scheduled positions remain unchanged during replay.
+- Standalone progress messages stream observations and app logs to the workbench during replay, retaining source/origin/run-ID checks.
+- Reset clears animation, markers, and observations; final verdicts still wait for the observation window. Browser scheduling and message latency remain approximate.
+- Added browser checks that live markers and observations appear before the verdict and remain cleared after reset for both targets.
+- Verification: the first run caught a stylesheet editing error; corrected it and reran `npm run verify` successfully: 33 tests, type checks, and both builds. Live replay was also observed in the browser.
+
+## Previous improvement: workbench drives standalone chat
 
 - Added a target selector and embedded independent chat instance. Edited scenarios and behavior are sent as immutable run snapshots; verdicts, observed timings, and logs return to the workbench.
 - The opt-in example adapter drives real Send/Cancel controls, observes rendered output, checks provider delivery, and handles reset and stale replies.
@@ -97,32 +106,11 @@ The standalone local workbench can edit and replay a cancellation scenario again
 | `d982605` | Streaming provider and cancellation demo | TypeScript checks, 3 engine tests, 3 browser tests; fixed verification passes and buggy verification fails as intended. |
 | `8c03fd0` | Editable timeline and automatic replay | TypeScript checks, 3 engine tests, 8 browser tests; timing edits, failure highlighting, JSON round trips, invalid-input rejection, error delivery, and reset. |
 
-These are recorded results for those milestones, not a claim that checks have run against every future change. Run `npm run check` to verify the current checkout.
-
-## Next: external application integration
-
-- [ ] Define a small host configuration: local app URL, provider connection, browser actions, assertion target, and reset procedure.
-- [ ] Connect a separate fictional example app while keeping its rendering, request handling, and application state real.
-- [ ] Reproduce a late-result failure in that app, then verify its fix.
-- [ ] Share scenario execution and assertion logic between workbench and headless runs.
-- [ ] Accept an exported scenario file and host configuration directly from the CLI.
-- [ ] Document the integration and verify setup from a clean checkout.
-
-Success means a developer can connect an app outside this workbench, reproduce a timing failure, and rerun the saved scenario headlessly without editing the test runner.
-
-## Later candidates
-
-These are not implemented or committed release promises.
-
-- Additional assertions for status, element visibility, and persisted state.
-- Editable multi-request scenarios and portable host actions beyond the built-in gallery.
-- Real save/load verification through a test application's persistence layer.
-- Additional provider protocol adapters.
-- Voice events and audio playback checks after text workflows are established.
+These are recorded results for those milestones, not a claim that checks have run against every future change. Run `npm run verify` to verify the current checkout.
 
 ## Current limits
 
-- Automatic workbench and gallery replay control only their built-in demos.
+- The workbench controls its built-in demo or the standalone chat example; gallery replay controls its built-in demos.
 - The CLI uses the default scenario fixture and demo-specific browser actions.
 - The original workbench assertion checks text absence after cancellation; gallery assertions cover the additional cases above. A pass does not certify overall correctness.
 - Event highlighting provides diagnostic context, not guaranteed root-cause attribution.
@@ -134,3 +122,19 @@ These are not implemented or committed release promises.
 ## Updating this tracker
 
 Update completed work, current limits, and next steps with each milestone. Record verification that actually ran. Keep private application details and data out of this document.
+
+## Public workbench theme toggle
+
+Added a light/dark toggle to the workbench and gallery. Initial preference follows the system; explicit choice persists locally. Embedded standalone chat retains its own styling. Verification: npm run verify passed all 33 tests, type checks, and both builds. A local browser smoke check confirmed system light preference, toggling, persistence across reload, and the gallery toggle.
+
+## Public timeline marker editing
+
+Added pointer dragging for provider and cancellation markers with live millisecond labels and synchronized numeric fields. Arrow keys edit by 1 ms (Shift: 10 ms); Home/End move to bounds. Provider markers stay between neighboring events to preserve ordering; cancellation stays before observation end. Editing locks during a run. Verification: npm run verify passed 34 tests, type checks, and both builds, including a new drag/keyboard/bounds test.
+
+## Stop and replay controls
+
+Public workbench now supports Stop test and Replay again. Stop aborts the transport, removes pending timers/observers, invalidates the run, and marks it incomplete while preserving received workbench observations. The standalone target resets its embedded app to stop delivery. Cancel request remains a separate scenario action. Verification: npm run verify passed all 36 tests, type checks, and both builds. Stop/replay regressions cover both built-in and standalone targets, including waiting past the original observation deadline to reject stale verdicts.
+
+## Stacked timeline labels
+
+Public markers now have dedicated label rows, ordered by time, with right-extending labels and vertical connectors. Equal timestamps share a connector path. A fixed 290px viewport scrolls for larger sets; its height does not change during edits or runs. This first layout deliberately uses one row per event to avoid crossing connectors. Browser checks confirmed equal-time labels do not overlap and viewport height remains stable. Initial verification exposed a drag test using offscreen coordinates; after scrolling markers into view, npm run verify passed all 36 tests, type checks, and both builds.

@@ -1,9 +1,20 @@
 import React from 'react';
 import type { Scenario, ProviderEvent } from '../shared/engine';
-export function TimelineEditor({ scenario, onChange, disabled, failedEvent }: {
-  scenario: Scenario; onChange: (s: Scenario) => void; disabled: boolean; failedEvent: number | null;
+export function TimelineEditor({ scenario, onChange, disabled, failedEvent, elapsedMs, running, started, receivedCount, cancelled }: {
+  scenario: Scenario; onChange: (s: Scenario) => void; disabled: boolean; failedEvent: number | null; elapsedMs: number; running: boolean; started: boolean; receivedCount: number; cancelled: boolean;
 }) {
   const update = (index: number, event: ProviderEvent) => onChange({ ...scenario, events: scenario.events.map((old, i) => i === index ? event : old) });
+  const drag = React.useRef<{ pointerId: number; index: number; startX: number; startTime: number; width: number } | null>(null);
+  const bounds = (index: number) => index === -1
+    ? [0, Math.max(0, scenario.observeUntilMs - 1)]
+    : [scenario.events[index - 1]?.atMs ?? 0, scenario.events[index + 1]?.atMs ?? scenario.observeUntilMs];
+  const move = (index: number, time: number) => {
+    if (disabled) return;
+    const [min, max] = bounds(index);
+    const atMs = Math.max(min, Math.min(max, Math.round(time)));
+    if (index === -1) onChange({ ...scenario, cancelAtMs: atMs });
+    else update(index, { ...scenario.events[index], atMs });
+  };
   const add = () => {
     const events = [...scenario.events];
     const terminal = events.findIndex(e => e.type !== 'text');
@@ -13,8 +24,18 @@ export function TimelineEditor({ scenario, onChange, disabled, failedEvent }: {
     onChange({ ...scenario, events });
   };
   const marks = [...scenario.events.map((e, i) => ({ atMs: e.atMs, label: e.type, index: i })), { atMs: scenario.cancelAtMs, label: 'cancel requested', index: -1 }];
+  // Left-to-right events stack top-to-bottom. Labels extend right so a
+  // connector never travels through another label; equal times share a trunk.
+  const ordered = [...marks].sort((a, b) => a.atMs - b.atMs || a.index - b.index);
+  const rowByIndex = new Map(ordered.map((mark, row) => [mark.index, row]));
+  const stackHeight = Math.max(224, marks.length * 56 + 24);
   return <section className="panel editor"><div className="section-heading"><div><span className="eyebrow">SCENARIO</span><h2>Shape the sequence</h2></div><span className="badge">{scenario.events.length} provider events</span></div>
-    <div className="ruler" aria-label="Event timeline">{marks.map(m => <div key={m.index} className={`marker ${m.index === -1 ? 'cancel-marker' : ''} ${failedEvent === m.index ? 'failed-marker' : ''}`} style={{ left: `${Math.max(0, Math.min(100, m.atMs / Math.max(1, scenario.observeUntilMs) * 100))}%` }} title={`${m.atMs}ms: ${m.label}`}><span>{m.label}</span></div>)}</div>
+    <p className="replay-status" data-testid="replay-status">{running ? started ? 'Replaying' : 'Waiting for provider' : started ? 'Replay stopped' : 'Ready to replay'} · <span data-testid="elapsed-time">{elapsedMs}</span> ms · {receivedCount}/{scenario.events.length} events received{cancelled ? ' · Cancel requested' : ''}</p><div className="timeline-stack-scroll" tabIndex={0} aria-label="Scrollable event labels"><div className="ruler stacked-ruler" aria-label="Event timeline" style={{ height: stackHeight }}>{started && <div className="playhead" data-testid="playhead" style={{ left: `${Math.min(100, elapsedMs / Math.max(1, scenario.observeUntilMs) * 100)}%` }} aria-hidden="true"/>}{marks.map(m => <div key={m.index} role="slider" tabIndex={disabled ? -1 : 0} aria-label={m.index === -1 ? 'Cancellation time' : `Event ${m.index + 1} timeline time`} aria-valuemin={bounds(m.index)[0]} aria-valuemax={bounds(m.index)[1]} aria-valuenow={m.atMs} aria-valuetext={`${m.atMs} milliseconds`} aria-disabled={disabled}
+      onPointerDown={e => { if (disabled || e.button !== 0) return; e.preventDefault(); e.currentTarget.focus(); e.currentTarget.setPointerCapture(e.pointerId); drag.current = { pointerId: e.pointerId, index: m.index, startX: e.clientX, startTime: m.atMs, width: e.currentTarget.parentElement!.getBoundingClientRect().width }; }}
+      onPointerMove={e => { const d = drag.current; if (d && d.pointerId === e.pointerId && d.index === m.index) move(m.index, d.startTime + (e.clientX - d.startX) / Math.max(1, d.width) * scenario.observeUntilMs); }}
+      onPointerUp={e => { drag.current = null; if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId); }}
+      onPointerCancel={() => { drag.current = null; }} onLostPointerCapture={() => { drag.current = null; }}
+      onKeyDown={e => { const step = e.shiftKey ? 10 : 1; const values: Record<string, number> = { ArrowLeft: m.atMs - step, ArrowDown: m.atMs - step, ArrowRight: m.atMs + step, ArrowUp: m.atMs + step, Home: bounds(m.index)[0], End: bounds(m.index)[1] }; if (e.key in values) { e.preventDefault(); move(m.index, values[e.key]); } }} data-testid={`marker-${m.index}`} data-received={m.index === -1 ? cancelled : m.index < receivedCount} className={`marker ${m.index === -1 ? 'cancel-marker' : ''} ${failedEvent === m.index ? 'failed-marker' : ''} ${(m.index === -1 ? cancelled : m.index < receivedCount) ? 'received-marker' : ''}`} style={{ left: `${Math.max(0, Math.min(100, m.atMs / Math.max(1, scenario.observeUntilMs) * 100))}%`, '--label-rise': `${stackHeight - (rowByIndex.get(m.index) ?? 0) * 56 - 44}px` } as React.CSSProperties} title={`${m.atMs}ms: ${m.label}`}><i className="marker-connector" aria-hidden="true"/><span className="stacked-label">{m.label}{(m.index === -1 ? cancelled : m.index < receivedCount) ? ' ✓' : ''}<small className="marker-time">{m.atMs} ms</small></span></div>)}</div></div>
     <div className="ruler-labels"><span>0 ms</span><span>{scenario.observeUntilMs} ms</span></div>
     <fieldset disabled={disabled}><div className="fields"><label>Scenario ID<input value={scenario.id} onChange={e => onChange({ ...scenario, id: e.target.value })}/></label><label>Cancel at (ms)<input type="number" min="0" max="60000" value={scenario.cancelAtMs} onChange={e => onChange({ ...scenario, cancelAtMs: Number(e.target.value) })}/></label><label>Observe until (ms)<input type="number" min="1" max="60000" value={scenario.observeUntilMs} onChange={e => onChange({ ...scenario, observeUntilMs: Number(e.target.value) })}/></label></div>
     <label>Prompt<input value={scenario.prompt} onChange={e => onChange({ ...scenario, prompt: e.target.value })}/></label>

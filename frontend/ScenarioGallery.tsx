@@ -1,3 +1,4 @@
+import { ThemeToggle } from './ThemeToggle';
 import React, { useEffect, useRef, useState } from 'react';
 import { raceScenarios, type Action } from './raceScenarios';
 
@@ -98,7 +99,7 @@ export function ScenarioGallery() {
     }, 1800));
   };
   const labels: Record<Action, string> = { first: 'Generate', second: 'Generate again / Retry', cancel: 'Cancel', leave: 'Leave editor', return: 'Return to editor', delete: 'Delete item', change: 'Change brief' };
-  return <main><header><span className="eyebrow">AGENT TIMELINE / SCENARIO GALLERY</span><h1>Seven races to reproduce.</h1><p>Real fictional editor state, simulated provider streams. Each case includes an intentionally buggy behavior and a corrected version.</p><a href="/">Back to editable cancellation workbench</a></header>
+  return <main><header><ThemeToggle/><span className="eyebrow">AGENT TIMELINE / SCENARIO GALLERY</span><h1>Seven races to reproduce.</h1><p>Real fictional editor state, simulated provider streams. Each case includes an intentionally buggy behavior and a corrected version.</p><a href="/">Back to editable cancellation workbench</a></header>
     <section className="controls"><label>Scenario<select aria-label="Gallery scenario" value={selected} disabled={running} onChange={e => { reset(); select(e.target.value); }}>{raceScenarios.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label><label>Behavior<select aria-label="Gallery behavior" value={mode} disabled={running} onChange={e => { reset(); setMode(e.target.value); }}><option value="fixed">Fixed</option><option value="buggy">Buggy</option></select></label><div className="actions"><button onClick={reset}>Reset gallery</button><button className="primary" disabled={running} onClick={run}>Run gallery scenario</button></div></section>
     <section className="panel"><h2>{scenario.title}</h2><p>{scenario.goal}</p><ol>{scenario.actions.map((a, i) => <li key={i}><code>{a.atMs} ms</code>{labels[a.action]}</li>)}</ol><p className="hint">Actions run automatically using the editor controls below. Choose Buggy to reproduce the failure, then Fixed to verify the correction. These preset scenarios run for 1.8 seconds.</p></section>
     <section className="panel" ref={root}><h2>Fictional draft editor</h2><div className="actions">{Object.entries(labels).map(([action, label]) => <button key={action} ref={node => { actions.current[action as Action] = node; }} disabled={!running} onClick={() => act(action as Action)}>{label}</button>)}</div><p>Screen: {screen} · Brief: {input}</p><p data-testid="gallery-status">{status}</p>{screen === 'editor' ? exists ? <div className="response" data-testid="gallery-output">{draft}</div> : <p>Item deleted</p> : <p>Library</p>}</section>

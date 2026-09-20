@@ -45,7 +45,11 @@ Dependencies remain managed by one root package and lockfile; the processes and 
 
 Events must be ordered, finish with one completion or error event, and fit inside the observation window. Use **Sort events by time** after retiming. Invalid scenarios cannot run or export. Edits stay in memory until exported; refreshing reloads the default fixture. Reset stops outstanding timers, observers, and delivery while retaining the edited scenario.
 
-**Send prompt** and **Cancel request** remain available for manual exploration. Only **Run scenario** generates a workbench verdict.
+**Send prompt** and **Cancel request** remain available for manual exploration. **Run scenario** and **Replay again** generate workbench verdicts.
+
+## Live replay
+
+During replay, a playhead tracks browser elapsed time from provider connection. Event markers gain a checkmark when delivery is observed, and cancellation is highlighted when it actually occurs. The observed timeline and event log update during standalone-chat runs as well as built-in demo runs. Reset clears the clock, markers, and observations. Scheduled event positions remain editable when idle; the playhead is approximate browser timing, not a guarantee of provider delivery.
 
 ## Observed interaction timeline
 
@@ -118,3 +122,17 @@ Choose a scenario and run it in **Buggy** mode to reproduce the defect, then **F
 The gallery runs real React editor state and browser controls against the local streaming provider. It checks forbidden content throughout replay, expected final content, provider completion, and an intermediate error-state assertion before retry. Browser scheduling remains approximate; incomplete delivery is a run error rather than a pass.
 
 Gallery recipes live in `frontend/raceScenarios.ts` and are covered by `tests/gallery.spec.ts` (`npm test`). They use multiple requests and app actions, so they are separate from the editable workbench's version-1 JSON format. Gallery import/export, arbitrary host integration, and persistent navigation state are not implemented. The navigation example changes views inside the demo; it does not reload the page.
+
+### Editing timeline markers
+
+Drag a response or cancellation marker to change its timing. The millisecond value appears beneath its label and updates the corresponding numeric field. Provider markers are constrained by neighboring events; cancellation must precede the observation deadline. Numeric fields remain available for precise editing. Focus a marker and use arrow keys (1 ms), Shift + arrow (10 ms), or Home/End. Markers are locked during playback.
+
+### Stopping and repeating a test
+
+While a workbench run is active, **Stop test** aborts it and shows **STOPPED · INCOMPLETE**; it never reports a passing test. Workbench observations remain available, while the standalone target resets its embedded app. **Replay again** starts a fresh run using the current scenario and behavior. **Cancel request** is separate: it is the application action exercised by the scenario, not a stop for the test harness.
+
+Timeline labels use separate rows ordered by timestamp. Vertical connectors preserve exact marker positions; equal timestamps share a connector path. The label viewport has a fixed height and scrolls for larger event sets, so dragging does not resize the page. This initial layout allocates one row per event.
+
+### Light and dark mode
+
+Use the theme toggle at the top of the workbench or gallery. The initial theme follows your system preference; your selection is saved locally in your browser. The embedded standalone chat uses its own styling.

@@ -35,7 +35,7 @@ Start `npm run dev` (workbench and provider) and `npm run dev:example` in separa
 2. Wait for **Connected**. The chat appears in an iframe as a fresh instance; an already-open chat tab is independent.
 3. Edit prompt, provider event timing/text, cancellation time, observation window, and forbidden text.
 4. Choose Buggy or Fixed, then click **Run scenario**.
-5. Watch the real controls and response in the embedded chat. The verdict, observed events, and app log return to the workbench after observation finishes.
+5. Watch the real controls and response in the embedded chat. Observed events and the app log return live while the playhead advances. The final verdict returns after observation finishes.
 
 The bridge supplies an immutable scenario snapshot to the provider call and clicks the app's real Send and Cancel controls. App request handling and rendering stay real. Reset aborts the embedded app's pending transport and discards old replies. Outside workbench mode, the app continues using its original preset.
 

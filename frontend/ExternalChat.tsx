@@ -1,16 +1,16 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { Scenario } from '../shared/engine';
-import type { HostCommand, HostReply, HostResult } from '../shared/host-run';
+import type { HostCommand, HostReply, HostResult, HostProgress } from '../shared/host-run';
 export interface ExternalChatHandle { run: () => void; reset: () => void }
 export const ExternalChat = forwardRef<ExternalChatHandle, {
-  scenario?: Scenario; mode: string; onBusy: (busy: boolean) => void; onResult: (result: HostResult) => void;
-}>(function ExternalChat({ scenario, mode, onBusy, onResult }, ref) {
+  scenario?: Scenario; mode: string; onBusy: (busy: boolean) => void; onResult: (result: HostResult) => void; onProgress: (progress: HostProgress) => void;
+}>(function ExternalChat({ scenario, mode, onBusy, onResult, onProgress }, ref) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [url, setUrl] = useState('');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const pending = useRef<string | null>(null), timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const callbacks = useRef({ onBusy, onResult }); callbacks.current = { onBusy, onResult };
+  const callbacks = useRef({ onBusy, onResult, onProgress }); callbacks.current = { onBusy, onResult, onProgress };
   const post = (command: HostCommand) => { if (url) frame.current?.contentWindow?.postMessage(command, new URL(url).origin); };
   const clear = () => { pending.current = null; if (timeout.current) clearTimeout(timeout.current); timeout.current = null; };
   const fail = (message: string) => { clear(); callbacks.current.onBusy(false); callbacks.current.onResult({ kind: 'error', message, eventIndex: null, observations: [], log: '' }); };
@@ -28,6 +28,7 @@ export const ExternalChat = forwardRef<ExternalChatHandle, {
     const listen = (event: MessageEvent<HostReply>) => {
       if (event.source !== frame.current?.contentWindow || event.origin !== new URL(url).origin || event.data?.channel !== 'agent-timeline') return;
       if (event.data.type === 'ready') setReady(true);
+      if (event.data.type === 'progress' && event.data.id === pending.current) callbacks.current.onProgress(event.data.progress);
       if (event.data.type === 'result' && event.data.id === pending.current) {
         clear(); callbacks.current.onBusy(false); callbacks.current.onResult(event.data.result);
       }

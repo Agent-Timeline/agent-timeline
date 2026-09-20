@@ -1,0 +1,23 @@
+import { test, expect } from '@playwright/test';
+test('drag updates event and cancellation timing, displays milliseconds, and preserves bounds', async ({ page }) => {
+ await page.goto('/');
+ const marker = page.getByTestId('marker-0');
+ await expect(marker).toHaveAttribute('aria-valuenow', '100');
+ await marker.scrollIntoViewIfNeeded();
+ const box = (await marker.boundingBox())!;
+ await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+ await page.mouse.down(); await page.mouse.move(box.x + 100, box.y, {steps:5}); await page.mouse.up();
+ const time = await page.getByLabel('Event 1 time', {exact:true}).inputValue();
+ expect(Number(time)).toBeGreaterThan(100);
+ await expect(marker.locator('.marker-time')).toHaveText(`${time} ms`);
+ const cancel = page.getByTestId('marker--1'); await cancel.scrollIntoViewIfNeeded(); const cb = (await cancel.boundingBox())!;
+ await page.mouse.move(cb.x + 4, cb.y + 4); await page.mouse.down(); await page.mouse.move(cb.x + 80, cb.y, {steps:5}); await page.mouse.up();
+ expect(Number(await page.getByLabel('Cancel at (ms)', {exact:true}).inputValue())).toBeGreaterThan(700);
+ await cancel.focus(); await page.keyboard.press('End'); await expect(cancel).toHaveAttribute('aria-valuenow','1799');
+ await page.keyboard.press('Home'); await expect(cancel).toHaveAttribute('aria-valuenow','0');
+ await marker.focus(); await page.keyboard.press('End'); await expect(marker).toHaveAttribute('aria-valuenow','1100');
+ await page.keyboard.press('Home'); await expect(marker).toHaveAttribute('aria-valuenow','0');
+ await page.keyboard.press('ArrowRight'); await expect(marker).toHaveAttribute('aria-valuenow','1');
+ await page.getByRole('button',{name:'Run scenario',exact:true}).click();
+ await expect(marker).toHaveAttribute('aria-disabled','true');
+});

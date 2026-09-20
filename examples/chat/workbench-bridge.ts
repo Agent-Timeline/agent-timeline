@@ -26,10 +26,12 @@ export function connectWorkbench(setScenario: (scenario: Scenario | null) => voi
     const cancel = button('cancel');
     const submitted = performance.now();
     const observations: HostObservation[] = [];
+    let connectedAt = 0;
     let connected = false, cancelled = false, delivered = 0, lastIndex: number | null = null;
     let violation: { elapsed: number; index: number | null } | null = null;
     let seenLines = 0, finished = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    const progress = () => { if (!finished && connected) reply({ channel: 'agent-timeline', type: 'progress', id: command.id, progress: { elapsedMs: Math.round(performance.now() - connectedAt), observations, log: log.textContent || '' } }); };
     const inspect = () => {
       if (cancelled && !violation && output.textContent?.includes(scenario.assertion.text)) violation = { elapsed: Math.round(performance.now() - submitted), index: lastIndex };
     };
@@ -54,7 +56,7 @@ export function connectWorkbench(setScenario: (scenario: Scenario | null) => voi
       const lines = (log.textContent || '').split('\n').filter(Boolean);
       for (const line of lines.slice(seenLines)) {
         if (line === 'Provider connected' && !connected) {
-          connected = true;
+          connected = true; connectedAt = performance.now();
           timers.push(setTimeout(() => {
             if (cancel.disabled) { finish('Cancel control was unavailable at the scheduled time.'); return; }
             cancel.click();
@@ -67,7 +69,7 @@ export function connectWorkbench(setScenario: (scenario: Scenario | null) => voi
         }
       }
       seenLines = lines.length;
-      inspect();
+      inspect(); progress();
     });
     // The real cancel handler and app reducer remain in charge of app state.
     cancel.addEventListener('click', onCancel);

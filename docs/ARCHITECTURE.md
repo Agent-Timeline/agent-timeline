@@ -35,7 +35,7 @@ Workbench :4317 -- scenario + mode + run ID --> Chat iframe :4319
                                                Provider :4318
 ```
 
-The iframe adapter is enabled only for an embedded `?timeline` instance and checks the parent origin/source. The workbench checks reply origin/source and run ID. The adapter changes only the supplied provider scenario and drives real app controls; it observes the DOM and app event log. Standalone tabs are not remotely driven. Browser tests exercise this same connection. `GET /api/example-target` returns the loopback example URL configured by `TIMELINE_EXAMPLE_PORT` (default 4319).
+The iframe adapter is enabled only for an embedded `?timeline` instance and checks the parent origin/source. The workbench checks reply origin/source and run ID for live progress and final results. Its playhead starts at observed provider connection and marker highlights reflect received events, not scheduled time alone. The adapter changes only the supplied provider scenario and drives real app controls; it observes the DOM and app event log. Standalone tabs are not remotely driven. Browser tests exercise this same connection. `GET /api/example-target` returns the loopback example URL configured by `TIMELINE_EXAMPLE_PORT` (default 4319).
 
 ## System overview
 
