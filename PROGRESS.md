@@ -4,7 +4,7 @@ Last updated: September 19, 2026.
 
 ## Current milestone
 
-The standalone local workbench can edit and replay a cancellation scenario against the built-in demo, detect a late-result defect, and verify the corrected behavior. External application integration is the next milestone.
+The standalone local workbench can edit and replay a cancellation scenario against the built-in demo, detect a late-result defect, and verify the corrected behavior. A separate scenario gallery now covers seven additional races in a fictional draft editor. External application integration remains the next milestone.
 
 ## Completed
 
@@ -23,7 +23,22 @@ The standalone local workbench can edit and replay a cancellation scenario again
 - [x] Headless verification commands for the built-in demo.
 - [x] Desktop visual review and mobile overflow check.
 
-## Latest improvement: observed cancellation timeline
+## Scenario documentation
+
+- Added `docs/SCENARIOS.md` covering the cancellation workbench and all seven gallery presets: problems, exact timing, expected behavior, implemented assertions, and limitations.
+- Linked the reference from the README and documented contribution steps and unsupported extensions.
+- Checked the descriptions against the fixture, gallery recipes, and assertion implementation; documentation-only work did not require a new test run.
+
+## Latest improvement: seven runnable race scenarios
+
+- Added a gallery for out-of-order requests, cancel/retry, partial stream failure, navigation, deletion, changed inputs, and duplicate delivery.
+- Each recipe operates real fictional editor controls and state, using simulated provider streams; buggy mode fails and fixed mode passes.
+- Assertions observe forbidden content across replay, final content, deletion, intermediate error recovery, and complete provider delivery.
+- Added optional provider event IDs for duplicate detection. Gallery recipes are TypeScript definitions, separate from the editable single-request JSON format.
+- Verification: `npm run check` passed (TypeScript, 3 engine tests, 16 browser tests). Seven browser tests each exercised both buggy and fixed behavior; reset cleanup is covered separately. Desktop appearance and mobile overflow were checked.
+- Limits: gallery-only host, fixed recipe timings, no gallery import/export, no persistence, and navigation changes local views rather than reloading a page.
+
+## Previous improvement: observed cancellation timeline
 
 - Added an observed interaction timeline for automatic and manual runs: cancel requested, response received, and late response received.
 - Late arrivals identify whether the app accepted or ignored the event; assertions remain the source of rendered-UI verification.
@@ -56,16 +71,16 @@ Success means a developer can connect an app outside this workbench, reproduce a
 These are not implemented or committed release promises.
 
 - Additional assertions for status, element visibility, and persisted state.
-- Overlapping requests, retries, and navigation scenarios.
+- Editable multi-request scenarios and portable host actions beyond the built-in gallery.
 - Real save/load verification through a test application's persistence layer.
 - Additional provider protocol adapters.
 - Voice events and audio playback checks after text workflows are established.
 
 ## Current limits
 
-- Automatic workbench replay controls only the built-in demo.
+- Automatic workbench and gallery replay control only their built-in demos.
 - The CLI uses the default scenario fixture and demo-specific browser actions.
-- The supported assertion checks text absence after cancellation; a pass does not certify overall correctness.
+- The original workbench assertion checks text absence after cancellation; gallery assertions cover the additional cases above. A pass does not certify overall correctness.
 - Event highlighting provides diagnostic context, not guaranteed root-cause attribution.
 - Provider timing starts at request receipt; browser actions start at acknowledgement. Browser scheduling is not deterministic.
 - Scenario edits are in memory until exported. The demo does not exercise persistence.

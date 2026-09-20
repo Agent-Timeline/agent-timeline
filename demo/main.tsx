@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { parseScenario, type Scenario } from '../src/engine';
 import { TimelineEditor } from './TimelineEditor';
 import './style.css';
+import { ScenarioGallery } from './ScenarioGallery';
 type Observation = { atMs: number; kind: 'cancel' | 'arrival'; label: string };
 type Result = { kind: 'pass' | 'fail' | 'error'; message: string; eventIndex: number | null };
 function App() {
@@ -113,7 +114,7 @@ function App() {
     catch (error) { setFileError(`Import failed: ${String(error).replace('Error: ', '')}`); }
     finally { if (importInput.current) importInput.current.value = ''; }
   };
-  return <main><header><span className="eyebrow">AGENT TIMELINE / LOCAL WORKBENCH</span><h1>Make the race repeatable.</h1><p>Edit the events. Replay the interaction. Verify what stays on screen.</p></header>
+  return <main><header><span className="eyebrow">AGENT TIMELINE / LOCAL WORKBENCH</span><h1>Make the race repeatable.</h1><a href="/?gallery">Explore seven more race scenarios →</a><p>Edit the events. Replay the interaction. Verify what stays on screen.</p></header>
     <section className="controls"><label>Application behavior <select aria-label="Application behavior" value={mode} disabled={busy} onChange={e => { reset(); setMode(e.target.value); }}><option value="fixed">Fixed · reject cancelled results</option><option value="buggy">Buggy · accept every result</option></select></label><div className="actions"><button disabled={busy} onClick={() => importInput.current?.click()}>Import JSON</button><input ref={importInput} aria-label="Import scenario file" type="file" accept=".json,application/json" hidden onChange={e => void importScenario(e.target.files?.[0])}/><button disabled={busy || !scenario || !!validation} onClick={exportScenario}>Export JSON</button><button onClick={reset}>Reset</button><button className="primary" disabled={busy || !scenario || !!validation} onClick={() => void submit(true)}>{busy ? 'Running…' : 'Run scenario'}</button></div></section>
     {(validation || fileError) && <p role="alert" className="validation">{fileError || validation}</p>}
     <div className="workbench-grid">{scenario && <TimelineEditor scenario={scenario} onChange={edit} disabled={busy} failedEvent={result?.eventIndex ?? null}/>}
@@ -122,4 +123,4 @@ function App() {
     <section className="panel"><h2>Observed interaction timeline</h2><p className="hint">Browser receipt times measured from request submission. Cancellation is local; this provider sends no cancellation acknowledgement. Accepted events are handled by the app; the verdict checks what actually appears.</p><ol data-testid="observed-timeline" className="observed-timeline">{observations.map((event, index) => <li key={index} className={`observed-${event.kind}`}><code>{event.atMs} ms</code><span>{event.label}</span></li>)}</ol>{!observations.length && <p>Run a scenario to see cancellation and response arrivals.</p>}</section>
     <section className="panel"><h2>Event log</h2><pre data-testid="event-log">{log.join('\n') || 'Waiting for a request.'}</pre></section><footer>Local development · No live model · Provider offsets start at request receipt; browser actions start at acknowledgement.</footer></main>;
 }
-createRoot(document.getElementById('root')!).render(<App/>);
+createRoot(document.getElementById('root')!).render(new URLSearchParams(location.search).has('gallery') ? <ScenarioGallery/> : <App/>);

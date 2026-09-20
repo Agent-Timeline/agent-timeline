@@ -64,6 +64,7 @@ Scenarios supply the prompt, provider events, cancellation delay, observation du
 Simulate AI provider responses while the application’s real rendering, state, and persistence run. Control event timing, replay failures, and verify expected behavior with assertions.
 
 - [Progress and next steps](PROGRESS.md)
+- [Scenario reference](docs/SCENARIOS.md)
 - [Implementation scope](docs/MVP.md)
 - [Architecture specification](docs/ARCHITECTURE.md)
 
@@ -74,3 +75,23 @@ A project by Visuail LLC. Engineering: Kate Steinmeyer.
 ## License
 
 Licensed under the [MIT License](LICENSE).
+
+## Scenario gallery
+
+Open **Explore seven more race scenarios** in the workbench, or visit `http://127.0.0.1:4317/?gallery`.
+
+Choose a scenario and run it in **Buggy** mode to reproduce the defect, then **Fixed** mode to verify the correction:
+
+| Scenario | Assertion |
+| --- | --- |
+| Requests finish out of order | Only the newest result appears. |
+| Cancel then retry | Cancelled chunks never mix into the retry. |
+| Stream fails halfway through | Partial text remains, loading ends with an error, and retry succeeds. |
+| Navigate away and return | Invalidated results never appear on return. |
+| Delete during generation | A late result never recreates the deleted item. |
+| Change inputs during generation | A response based on the previous brief is rejected. |
+| Duplicate delivery | Repeated delivery of the same event ID appends text once. |
+
+The gallery runs real React editor state and browser controls against the local streaming provider. It checks forbidden content throughout replay, expected final content, provider completion, and an intermediate error-state assertion before retry. Browser scheduling remains approximate; incomplete delivery is a run error rather than a pass.
+
+Gallery recipes live in `demo/raceScenarios.ts` and are covered by `tests/gallery.spec.ts` (`npm test`). They use multiple requests and app actions, so they are separate from the editable workbench's version-1 JSON format. Gallery import/export, arbitrary host integration, and persistent navigation state are not implemented. The navigation example changes views inside the demo; it does not reload the page.

@@ -1,4 +1,4 @@
-export type ProviderEvent = { atMs: number } & (
+export type ProviderEvent = { atMs: number; eventId?: string } & (
   { type: 'text'; text: string } | { type: 'complete' } | { type: 'error'; message: string }
 );
 export interface Scenario {
@@ -20,6 +20,7 @@ export function parseScenario(input: unknown): Scenario {
   for (const event of input.events) {
     if (!object(event) || !time(event.atMs) || event.atMs < last || event.atMs > input.observeUntilMs || terminal)
       throw new Error('Events must be ordered, inside the observation window, and precede termination');
+    if (event.eventId !== undefined && !nonempty(event.eventId)) throw new Error('Event ID must be a nonempty string');
     if (event.type === 'text') {
       if (!nonempty(event.text)) throw new Error('Text event needs text');
     } else if (event.type === 'error') {
