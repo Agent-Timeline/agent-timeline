@@ -13,6 +13,10 @@ Simulate AI provider responses while the application’s real rendering, state, 
 - [Implementation scope](docs/MVP.md)
 - [Architecture specification](docs/ARCHITECTURE.md)
 
+## Credits
+
+A project by Visuail LLC. Engineering: Kate Steinmeyer.
+
 ## License
 
 Licensed under the [MIT License](LICENSE).
