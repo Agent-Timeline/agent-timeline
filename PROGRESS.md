@@ -214,3 +214,21 @@ Made the local stream proxy an explicit planned runtime component, including sim
 ## System overview diagram alignment
 
 Updated the planned system overview ASCII diagram to show the local stream proxy, protocol adapter, simulated/upstream response sources, and separate transport observations and UI assertion evidence. Names now match the detailed proxy architecture. Documentation only; diff formatting checked.
+
+## CLI stream proxy and iframe-free regression example
+
+Implemented `npm run proxy` with loopback binding, a fixed scenario or configured upstream, first-response delay, forced disconnect, request-size limits, response backpressure, abort propagation, and shutdown cleanup. Simulation uses the existing NDJSON protocol and overrides caller-provided scenarios. Forwarding passes streamed bytes to one configured unauthenticated development upstream; credentials are not forwarded. No publication, general runner, or workbench proxy controls are claimed.
+
+Added a standalone Playwright example that clicks real Send/Cancel controls without an iframe, watches for transient forbidden text, and requires late-delivery and stream-end evidence. `npm run test:proxy` runs the corrected app; `TIMELINE_CHAT_MODE=buggy npm run test:proxy` intentionally fails. Added tests for forwarding, delay, disconnection, concurrent request identity, and upstream abort cleanup.
+
+Validation: corrected an initial example selector mismatch. Final `npm run verify` passed 44 tests, type checks, and both builds. The separate buggy run failed with the expected late-chunk assertion and exit code 1. CLI help checked. Architecture, README, and example instructions updated.
+
+## Configurable connected-app runner
+
+Added a versioned local host configuration covering app URL, proxy port/route, simulated scenario or fixed upstream, response delay/disconnect, browser setup/actions, observation duration, text assertions, and required delivery evidence. The shared backend runner owns a fresh Playwright browser and local proxy, validates outcomes, and distinguishes pass/fail from errors and stopped observations.
+
+`npm run run:app -- --config FILE` produces the same events and assertion report as the workbench's **Connected app (config file)** mode. Set `TIMELINE_RUNNER_CONFIG` on backend startup. Workbench Run, Stop test, and Replay again operate through the runner API without embedding the app. Added a synthetic example config and `docs/RUNNER.md` setup guide. No package is published and no traffic is uploaded.
+
+Verification: fixed a browser function serialization issue found through the real CLI/API paths. Final `npm run verify` passed all 48 tests, both type checks, and both builds. New regressions cover CLI success, workbench success/stop, intentionally buggy UI failure, missing delivery evidence, missing selectors, and config validation. `git diff --check` passed.
+
+Limits: app startup and development endpoint routing are explicit; CSS selectors and click/fill/select actions only; text-content assertions and host-provided delivery evidence; loopback URLs, same-origin browser requests, fresh sessions, and one run per backend. Connected actions are edited in JSON; built-in timeline runners are not migrated. Next: validate more independent integrations before adding protocol adapters or publishing the package.

@@ -17,10 +17,13 @@
     "build:frontend": "vite build --config frontend/vite.config.ts",
     "verify": "npm run verify:backend && npm run verify:frontend",
     "verify:backend": "tsc --project tsconfig.backend.json && npm run test:unit && playwright test --config playwright.backend.config.ts",
-    "verify:frontend": "tsc --project tsconfig.frontend.json && npm run build:frontend && playwright test --config playwright.frontend.config.ts && npm run build:example && npm run test:example",
+    "verify:frontend": "tsc --project tsconfig.frontend.json && npm run build:frontend && playwright test --config playwright.frontend.config.ts && npm run build:example && npm run test:example && npm run test:proxy",
     "dev:example": "vite --config examples/chat/vite.config.ts",
     "build:example": "vite build --config examples/chat/vite.config.ts",
-    "test:example": "playwright test --config playwright.example.config.ts"
+    "test:example": "playwright test --config playwright.example.config.ts",
+    "proxy": "tsx backend/proxy-cli.ts",
+    "test:proxy": "playwright test --config playwright.proxy.config.ts",
+    "run:app": "tsx backend/runner-cli.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

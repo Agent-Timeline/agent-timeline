@@ -2,15 +2,15 @@
 
 ## Current implementation
 
-The standalone workbench edits scenarios in memory and sends a validated snapshot with each provider request. A local Node server emits the scheduled stream. The browser drives the demo's cancel control and observes DOM mutations through the configured window. The Playwright suite separately exercises the same demo for headless verification. Both use the scenario schema and provider, but the standalone chat has an example-specific iframe adapter; a unified browser/headless runner and arbitrary host adapters remain planned.
+The standalone workbench edits scenarios in memory and sends a validated snapshot with each provider request. A local Node server emits the scheduled stream. The browser drives the demo's cancel control and observes DOM mutations through the configured window. The Playwright suite separately exercises the same demo for headless verification. Both use the scenario schema and provider, but the standalone chat has an example-specific iframe adapter; the connected-app mode now uses one backend Playwright runner from both the workbench and CLI. Built-in demos retain their separate runners.
 
 The workbench reports the last delivered provider event when forbidden text is first observed. Batched DOM updates can combine events, so the highlight is diagnostic context rather than guaranteed causal attribution. Provider event times begin at request receipt; automatic browser actions begin at the start acknowledgement. Real browser scheduling and transport latency are not virtualized.
 
-The workbench now selects cancellation or connection recovery. Recovery uses a separate gallery runner with editable multi-request timings, stop/replay, and in-memory inspection of recorded text/status. These are not yet one general scenario format or one runner. The current CLI wraps demo-specific Playwright tests; it is not a configurable external-app test runner. The reusable provider client uses a custom NDJSON protocol and is not a published npm package.
+The workbench now selects cancellation or connection recovery. Recovery uses a separate gallery runner with editable multi-request timings, stop/replay, and in-memory inspection of recorded text/status. These are not yet one general scenario format or one runner. The existing verification CLI wraps demo-specific Playwright tests. A source-checkout proxy CLI now supports scripted NDJSON or a fixed development upstream, first-response delay, and forced disconnect; its standalone Playwright example uses a normal app page. The configurable external-app runner is implemented; see [host configuration](RUNNER.md). The reusable provider client uses a custom NDJSON protocol and is not a published npm package.
 
 ## Product direction
 
-Reproduce an AI streaming race in a real development app, verify its fix, and keep the failure caught in CI. The next milestone is one supported integration with the app running at its own URL, without iframe embedding or changes to its layout. The iframe remains an optional example, not the target integration contract.
+Reproduce an AI streaming race in a real development app, verify its fix, and keep the failure caught in CI. The connected-app mode runs a local app at its own URL without iframe embedding or changes to its layout. The iframe remains an optional example, not the target integration contract.
 
 A package is a delivery mechanism, not the product boundary. A small host configuration should identify the app URL, supported stream endpoint/protocol, request matching, browser actions, assertions, and reset/setup hooks. A backend snippet alone cannot discover UI controls or determine whether a response appeared. The first target is frontend/full-stack engineers testing AI interfaces; backend instrumentation can later connect internal operations to visible behavior.
 
@@ -29,7 +29,7 @@ backend/ :4318 (Node HTTP) <--- client/ in a separate app or Node process
 shared/ scenario validation and replay
 ```
 
-`backend/server.ts` imports only Node modules and shared code. It serves the provider API and returns JSON 404 for other paths. `frontend/vite.config.ts` serves the UI and proxies API traffic. `client/provider.ts` has no frontend dependency and uses a type-only shared import. The backend runs alone with `npm run dev:backend`; the frontend runs with `npm run dev:frontend`; `npm run dev` supervises both processes. Both bind to loopback. Root package dependencies remain shared. The frontend build is separate from the backend and requires API routing when hosted.
+`backend/server.ts` uses Node modules, shared contracts, and the local proxy/Playwright runner; it does not import frontend code. It serves the provider API and returns JSON 404 for other paths. `frontend/vite.config.ts` serves the UI and proxies API traffic. `client/provider.ts` has no frontend dependency and uses a type-only shared import. The backend runs alone with `npm run dev:backend`; the frontend runs with `npm run dev:frontend`; `npm run dev` supervises both processes. Both bind to loopback. Root package dependencies remain shared. The frontend build is separate from the backend and requires API routing when hosted.
 
 ## Implemented standalone chat control
 
@@ -114,7 +114,7 @@ A provider adapter maps scenario events to the protocol the application already 
 
 ## Planned timing and fault semantics
 
-Keep browser actions and provider events separate, correlated by run and request IDs. Add a fault layer at an explicitly named stream boundary. The initial supported adapter should provide first-response delay and midstream disconnection; extend it with inter-message delay, seeded jitter, and stalls. Record the seed and resolved fault schedule with each run. Do not claim virtualized browser time or packet-level network emulation.
+Keep browser actions and provider events separate, correlated by run and request IDs. Add a fault layer at an explicitly named stream boundary. The source-checkout proxy provides first-response delay and midstream disconnection; extend it with inter-message delay, seeded jitter, and stalls. Record the seed and resolved fault schedule with each run. Do not claim virtualized browser time or packet-level network emulation.
 
 A latency control must say what it delays: request forwarding, response headers, stream-message delivery, or a supported cancellation acknowledgement. Preserve protocol framing and message order unless a scenario explicitly requests a supported semantic fault. Duplicate logical messages are distinct from TCP packet retransmissions. Backpressure, buffering, connection closure, and cleanup must be tested in the adapter.
 
@@ -159,7 +159,7 @@ The runner owns per-run isolation, request correlation, setup/reset, timeout bud
 
 ## Local stream proxy and npm integration
 
-Ship the local stream proxy, supported protocol adapter, and shared runner through one installable npm package initially, with a programmatic API and CLI. Package naming and publication remain undecided. These are planned components, not currently published capabilities.
+Ship the local stream proxy, supported protocol adapter, and shared runner through one installable npm package initially, with a programmatic API and CLI. Package naming and publication remain undecided. The proxy now has a source-checkout CLI and server factory; the shared configurable runner is also implemented. Installable npm distribution remains planned. Nothing is published to npm yet.
 
 The proxy has two explicit modes:
 
@@ -195,3 +195,25 @@ Acceptance requires a known buggy app to fail and its corrected version to pass 
 ## Integration ownership
 
 Public examples use invented data. Private consumers implement their own actions, selectors, and configuration. No proprietary application source, credentials, traces, assets, or repository history belongs here.
+
+## Implemented connected-app runner
+
+```text
+Workbench Run/Stop ---- HTTP runner API --+
+                                         |
+CLI -- JSON configuration ---------------+--> backend/runner.ts
+                                              |
+                                              +--> Playwright --> app at its own URL
+                                              |                    | same-origin dev routing
+                                              +--> local proxy <---+
+                                              |       |
+                                              |       +--> NDJSON simulation OR fixed upstream
+                                              v
+                                    observed events + assertions
+                                      /                     \
+                                workbench               CLI JSON / exit code
+```
+
+The runner validates local URLs, starts one configured proxy, creates a fresh browser context, applies setup actions, observes DOM text, runs timed actions, and checks delivery evidence and assertions. Stop closes browser and proxy and returns an incomplete result. Proxy observations are transport events, not proof of rendering. The workbench polls the same report used by the CLI. One connected run is allowed per backend; separate processes must use distinct proxy ports.
+
+Current limits: CSS selectors, click/fill/select actions, timed text-absence checks, final text-contains checks, and required final delivery evidence. The host app must already be running and route its test endpoint to the proxy. The browser permits only the configured app origin. Arbitrary authentication/reset hooks, saved sessions, protocol adapters beyond NDJSON simulation, and migration of the built-in demo runners remain future work.

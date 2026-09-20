@@ -4,7 +4,7 @@ Reproduce the exact moment your AI interface breaks, then turn it into a regress
 
 Agent Timeline is an open-source project for reproducing timing bugs in AI interfaces: streaming responses, cancellations, retries, and delayed results.
 
-The local workbench includes an editable event timeline, a streaming provider, automatic cancellation replay, and pass/fail assertions against a real demo chat. A reusable TypeScript client connects to the simulated provider; the standalone chat can now be controlled from the workbench using its example-specific adapter. Arbitrary app adapters remain future work.
+The local workbench includes an editable event timeline, a streaming provider, automatic cancellation replay, and pass/fail assertions against a real demo chat. A reusable TypeScript client connects to the simulated provider; the standalone chat can now be controlled from the workbench using its example-specific adapter. A configurable proxy and shared Playwright runner also test local apps at their own URLs without embedding.
 
 ![Agent Timeline workbench with an editable event timeline and demo application](docs/images/workbench.png)
 
@@ -12,9 +12,17 @@ The local workbench includes an editable event timeline, a streaming provider, a
 
 [Watch the interactive timeline demo (MOV)](docs/videos/agenttimeline2.mov) — drag events, change timing, and replay the cancel-then-late-response scenario.
 
+## Choose a scenario
+
+Use the **Scenario** selector in the local workbench to switch between **Cancel then late response** and **Connection loss and recovery**. Recovery includes editable connection, request, and assertion timings, with Run scenario, Stop test, and Replay again. Switching scenarios clears the current run and unsaved edits. Recovery currently runs against the fictional editor; its multi-request recipe does not support standalone-chat targeting or JSON import/export.
+
 ## Standalone integration example
 
 Run a small independent chat app with Send, Cancel, and intentionally buggy/fixed behavior. It connects to the provider over HTTP without the workbench. Start `npm run dev:example` alongside `npm run dev`, select **Standalone chat** as the workbench test target, edit timing, and click **Run scenario**. The chat runs in an embedded instance and returns its verdict and observations to the workbench. See the [example setup and tests](examples/chat/README.md).
+
+## Connect your own development app
+
+Use a local JSON configuration for the app URL, proxy endpoint, browser actions, and assertions. **Connected app (config file)** in the workbench and `npm run run:app` execute the same runner and return observed events and assertion results. See [configuration and commands](docs/RUNNER.md). This currently runs from a source checkout; no npm package is published.
 
 ## Run locally
 
@@ -146,3 +154,11 @@ Adaptive tick marks show milliseconds below the timeline. Use **Zoom in** or **Z
 The gallery includes **Connection loss and recovery**: an active stream is aborted, partial text is checked while disconnected, and a restored connection permits an explicit retry. Assertions check replacement rather than duplicated output and a completed final state. This simulates connection loss through client transport abortion; it does not put the browser offline or resume a stream.
 
 The connection-recovery gallery now includes **Shape the recovery sequence**, with editable action, response, and assertion timings. Run gallery scenario executes those timings against the fictional editor. The lanes show planned timing; the event log and verdict report actual behavior. This recovery-specific editor does not change the version-1 import/export format.
+
+### Inspect a recovery replay
+
+After a connection-recovery run finishes or is stopped, choose **Inspect replay**. Drag the solid playhead or use the inspection time slider to view recorded response text, status, and events up to that time. Keyboard arrows move by 1 ms; Home/End move to the timeline boundaries. Inspection leaves the final app state and verdict unchanged. Reset, edits, or a new run discard the recording. This currently covers the recovery demo’s rendered text/status, not screenshots, arbitrary UI state, or external apps.
+
+## CLI stream proxy
+
+Run `npm run proxy -- --scenario scenarios/cancel-late-result.json` for a local scripted stream, or configure a fixed development upstream with `--upstream`. First-response delay and forced disconnect controls are available. See the [setup and Playwright late-chunk example](examples/proxy/README.md). `npm run test:proxy` tests the standalone app at its own URL without an iframe. This proxy command runs from a source checkout; no npm package is published. Use [the connected-app runner](docs/RUNNER.md) to configure browser actions and assertions.

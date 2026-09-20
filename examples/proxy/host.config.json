@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "name": "Standalone chat cancellation",
+  "appUrl": "http://127.0.0.1:4469",
+  "proxy": {
+    "port": 4468,
+    "path": "/api/generate",
+    "scenario": {
+      "version": 1,
+      "id": "cancel-late-result",
+      "prompt": "Suggest a title for my weekend project",
+      "cancelAtMs": 700,
+      "observeUntilMs": 1800,
+      "events": [
+        {
+          "atMs": 100,
+          "type": "text",
+          "text": "A possible title is "
+        },
+        {
+          "atMs": 1100,
+          "type": "text",
+          "text": "Weekend Atlas"
+        },
+        {
+          "atMs": 1300,
+          "type": "complete"
+        }
+      ],
+      "assertion": {
+        "type": "textAbsentAfterCancel",
+        "text": "Weekend Atlas"
+      }
+    }
+  },
+  "setup": [
+    {
+      "atMs": 0,
+      "type": "select",
+      "selector": "#mode",
+      "value": "fixed"
+    }
+  ],
+  "actions": [
+    {
+      "atMs": 0,
+      "type": "click",
+      "selector": "#send"
+    },
+    {
+      "atMs": 700,
+      "type": "click",
+      "selector": "#cancel"
+    }
+  ],
+  "observeUntilMs": 2200,
+  "assertions": [
+    {
+      "type": "textAbsent",
+      "selector": "#response",
+      "text": "Weekend Atlas",
+      "fromMs": 700
+    }
+  ],
+  "evidence": [
+    {
+      "selector": "#events",
+      "text": "1100ms \u00b7 text \u00b7 late"
+    },
+    {
+      "selector": "#events",
+      "text": "Stream ended"
+    }
+  ]
+}
