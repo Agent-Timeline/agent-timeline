@@ -32,6 +32,8 @@ Events must be ordered, finish with one completion or error event, and fit insid
 
 **Send prompt** and **Cancel request** remain available for manual exploration. Only **Run scenario** generates a workbench verdict.
 
+The observed interaction timeline records **Cancel requested** and **Late response received**, including whether the app accepted or ignored each late event. These browser timestamps start at request submission; scheduled provider offsets remain separate. This provider does not acknowledge cancellation.
+
 Cancellation deliberately leaves the stream open to model a result that arrives after the user cancels. Fixed mode rejects the stale request ID; buggy mode displays it. This demonstrates client-side result handling, not cancellation of a remote side effect.
 
 ## Verify the failure and fix

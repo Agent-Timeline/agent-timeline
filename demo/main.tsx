@@ -3,12 +3,14 @@ import { createRoot } from 'react-dom/client';
 import { parseScenario, type Scenario } from '../src/engine';
 import { TimelineEditor } from './TimelineEditor';
 import './style.css';
+type Observation = { atMs: number; kind: 'cancel' | 'arrival'; label: string };
 type Result = { kind: 'pass' | 'fail' | 'error'; message: string; eventIndex: number | null };
 function App() {
   const [scenario, setScenario] = useState<Scenario>();
   const [mode, setMode] = useState('fixed');
   const [status, setStatus] = useState('Idle');
   const [text, setText] = useState('');
+  const [observations, setObservations] = useState<Observation[]>([]);
   const [log, setLog] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
@@ -25,7 +27,7 @@ function App() {
   const append = (s: string) => setLog(old => [...old, s]);
   const cleanup = () => { timers.current.forEach(clearTimeout); timers.current = []; observer.current?.disconnect(); observer.current = null; cancelHook.current = null; };
   useEffect(() => { fetch('/api/scenario').then(r => r.json()).then(data => setScenario(parseScenario(data))).catch(() => setFileError('Failed to load scenario')); return () => { cleanup(); transport.current?.abort(); }; }, []);
-  const reset = () => { generation.current++; cleanup(); transport.current?.abort(); active.current = null; setText(''); setLog([]); setStatus('Idle'); setBusy(false); setResult(null); };
+  const reset = () => { generation.current++; cleanup(); transport.current?.abort(); active.current = null; setText(''); setLog([]); setObservations([]); setStatus('Idle'); setBusy(false); setResult(null); };
   let validation = '';
   if (scenario) { try { parseScenario(scenario); } catch (error) { validation = String(error).replace('Error: ', ''); } }
   const edit = (next: Scenario) => { reset(); setFileError(''); setScenario(next); };
@@ -41,7 +43,10 @@ function App() {
     let lastEvent: number | null = null;
     let violation: { eventIndex: number | null; elapsed: number } | null = null;
     let startTime = 0;
-    setResult(null); setText(''); setLog([]); setBusy(true); setStatus('Waiting'); append('Request submitted');
+    const submittedAt = performance.now();
+    const record = (kind: Observation['kind'], label: string) => setObservations(old => [...old, { atMs: Math.round(performance.now() - submittedAt), kind, label }]);
+    cancelHook.current = () => { if (cancelled) return; cancelled = true; record('cancel', 'Cancel requested'); if (automatic) inspect(); };
+    setResult(null); setText(''); setLog([]); setObservations([]); setBusy(true); setStatus('Waiting'); append('Request submitted');
     const inspect = () => {
       if (cancelled && !violation && responseNode.current?.textContent?.includes(run.assertion.text)) {
         violation = { eventIndex: lastEvent, elapsed: Math.round(performance.now() - startTime) };
@@ -67,7 +72,6 @@ function App() {
             if (automatic) {
               observer.current = new MutationObserver(inspect);
               observer.current.observe(responseNode.current!, { subtree: true, childList: true, characterData: true });
-              cancelHook.current = () => { cancelled = true; inspect(); };
               timers.current.push(setTimeout(() => cancelButton.current?.click(), run.cancelAtMs));
               timers.current.push(setTimeout(() => {
                 if (epoch !== generation.current) return;
@@ -87,6 +91,7 @@ function App() {
           terminal = event.type === 'complete' || event.type === 'error';
           const stale = active.current !== requestId;
           append(`${event.atMs}ms · ${event.type}${stale ? ' · arrived after cancellation' : ''}`);
+          record('arrival', `${cancelled ? 'Late response received' : 'Response received'} · ${event.type} · event #${lastEvent + 1} · scheduled ${event.atMs}ms${cancelled ? mode === 'fixed' ? ' · ignored by app' : ' · accepted by app' : ''}`);
           if (mode === 'fixed' && stale) { append('Ignored stale result'); continue; }
           if (event.type === 'text') { setText(old => old + event.text); setStatus('Streaming'); }
           if (event.type === 'complete') { setStatus('Completed'); active.current = null; }
@@ -114,6 +119,7 @@ function App() {
     <div className="workbench-grid">{scenario && <TimelineEditor scenario={scenario} onChange={edit} disabled={busy} failedEvent={result?.eventIndex ?? null}/>}
     <aside><section className="panel"><span className="eyebrow">REAL UI / SIMULATED PROVIDER</span><h2>Demo application</h2><p className="prompt">{scenario?.prompt || 'Loading scenario…'}</p><div className="actions"><button disabled={!scenario || busy || !!validation} onClick={() => void submit(false)}>Send prompt</button><button ref={cancelButton} disabled={!busy || status === 'Cancelled'} onClick={cancel}>Cancel request</button></div><p role="status">{status}</p><div ref={responseNode} data-testid="response" className="response">{text}</div></section>
     <section className={`panel verdict ${result?.kind || ''}`} aria-live="polite" data-testid="verdict"><h2>{result ? result.kind === 'pass' ? 'PASS' : result.kind === 'fail' ? 'FAIL' : 'RUN ERROR' : busy ? 'Observing…' : 'Ready to verify'}</h2><p>{result?.message || 'Run the scenario to cancel automatically and check for forbidden text throughout the observation window.'}</p></section></aside></div>
+    <section className="panel"><h2>Observed interaction timeline</h2><p className="hint">Browser receipt times measured from request submission. Cancellation is local; this provider sends no cancellation acknowledgement. Accepted events are handled by the app; the verdict checks what actually appears.</p><ol data-testid="observed-timeline" className="observed-timeline">{observations.map((event, index) => <li key={index} className={`observed-${event.kind}`}><code>{event.atMs} ms</code><span>{event.label}</span></li>)}</ol>{!observations.length && <p>Run a scenario to see cancellation and response arrivals.</p>}</section>
     <section className="panel"><h2>Event log</h2><pre data-testid="event-log">{log.join('\n') || 'Waiting for a request.'}</pre></section><footer>Local development · No live model · Provider offsets start at request receipt; browser actions start at acknowledgement.</footer></main>;
 }
 createRoot(document.getElementById('root')!).render(<App/>);

@@ -12,7 +12,7 @@ export function TimelineEditor({ scenario, onChange, disabled, failedEvent }: {
     events.splice(index, 0, { atMs, type: 'text', text: 'New response chunk' });
     onChange({ ...scenario, events });
   };
-  const marks = [...scenario.events.map((e, i) => ({ atMs: e.atMs, label: e.type, index: i })), { atMs: scenario.cancelAtMs, label: 'cancel', index: -1 }];
+  const marks = [...scenario.events.map((e, i) => ({ atMs: e.atMs, label: e.type, index: i })), { atMs: scenario.cancelAtMs, label: 'cancel requested', index: -1 }];
   return <section className="panel editor"><div className="section-heading"><div><span className="eyebrow">SCENARIO</span><h2>Shape the sequence</h2></div><span className="badge">{scenario.events.length} provider events</span></div>
     <div className="ruler" aria-label="Event timeline">{marks.map(m => <div key={m.index} className={`marker ${m.index === -1 ? 'cancel-marker' : ''} ${failedEvent === m.index ? 'failed-marker' : ''}`} style={{ left: `${Math.max(0, Math.min(100, m.atMs / Math.max(1, scenario.observeUntilMs) * 100))}%` }} title={`${m.atMs}ms: ${m.label}`}><span>{m.label}</span></div>)}</div>
     <div className="ruler-labels"><span>0 ms</span><span>{scenario.observeUntilMs} ms</span></div>

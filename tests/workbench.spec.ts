@@ -7,10 +7,17 @@ test('automatic replay fails in buggy mode, highlights the event, and passes in 
   await page.getByRole('button', { name: 'Run scenario', exact: true }).click();
   await expect(page.getByTestId('verdict')).toContainText('FAIL');
   await expect(page.getByTestId('event-1')).toHaveClass(/event-failed/);
+  const observed = page.getByTestId('observed-timeline');
+  await expect(observed.locator('li')).toHaveCount(4);
+  await expect(observed.locator('li').nth(1)).toContainText('Cancel requested');
+  await expect(observed.locator('li').nth(2)).toContainText('Late response received · text');
+  await expect(observed.locator('li').nth(2)).toContainText('accepted by app');
   await page.getByLabel('Application behavior').selectOption('fixed');
   await page.getByRole('button', { name: 'Run scenario', exact: true }).click();
   await expect(page.getByTestId('verdict')).toContainText('PASS');
   await expect(page.getByRole('status')).toHaveText('Cancelled');
+  await expect(observed.locator('li')).toHaveCount(4);
+  await expect(observed.locator('li').nth(2)).toContainText('ignored by app');
 });
 test('edited timing reaches the provider and validation prevents invalid replay', async ({ page }) => {
   await page.goto('/');
@@ -55,6 +62,7 @@ test('add, remove, sort and reset clean up an automatic run', async ({ page }) =
   await page.getByRole('button', { name: 'Reset', exact: true }).click();
   await page.waitForTimeout(2000);
   await expect(page.getByTestId('response')).toBeEmpty();
+  await expect(page.getByTestId('observed-timeline').locator('li')).toHaveCount(0);
   await expect(page.getByRole('status')).toHaveText('Idle');
   await expect(page.getByTestId('verdict')).toContainText('Ready to verify');
 });

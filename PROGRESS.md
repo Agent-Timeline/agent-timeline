@@ -23,6 +23,14 @@ The standalone local workbench can edit and replay a cancellation scenario again
 - [x] Headless verification commands for the built-in demo.
 - [x] Desktop visual review and mobile overflow check.
 
+## Latest improvement: observed cancellation timeline
+
+- Added an observed interaction timeline for automatic and manual runs: cancel requested, response received, and late response received.
+- Late arrivals identify whether the app accepted or ignored the event; assertions remain the source of rendered-UI verification.
+- Browser timestamps use request submission as their origin and retain separate scheduled provider offsets. No remote cancellation acknowledgement is fabricated.
+- Reset and new runs clear the observed timeline.
+- Verification: `npm run check` passed (TypeScript, 3 engine tests, 8 browser tests), including event ordering, accepted/ignored late arrivals, and reset cleanup. Manual cancellation was also checked in the browser.
+
 ## Verified milestones
 
 | Commit | Delivered | Verification |
