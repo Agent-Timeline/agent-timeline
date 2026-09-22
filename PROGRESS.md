@@ -242,3 +242,15 @@ Setup checks verify the app's HTTP response without following redirects and temp
 Verification: `npm run verify` passed all 52 tests, type checks, and both builds. Four new tests exercise CLI generation, overwrite protection, offline output, proxy cleanup/occupied ports, redirect refusal, local URL validation, and skipped checks. CLI help and diff formatting checked. No private app was accessed or modified.
 
 Limits: selectors are suggested, not discovered; app endpoint routing, prompt setup, timing, and assertions still require review. This remains a source-checkout command, not a published package. Next: simplify first-run diagnosis using feedback from independent integrations.
+
+## Connected-app connection loss and recovery
+
+Extended the configurable proxy runner with ordered per-request fault plans. Request 1 can be disconnected while request 2 completes normally; observed events identify each request and distinguish injected disconnection from abortion and completion. Unexpected extra requests are rejected. Added timed text checkpoints and exact-text assertions so an intermediate failure or duplicated retry output cannot be hidden by a later Completed status.
+
+The independent synthetic chat now has a real Retry button after transport failure. Fixed mode replaces abandoned partial output; Buggy mode appends it. Added `examples/proxy/recovery.config.json` for the shared CLI/workbench runner, with checks before retry and at completion. This uses an app at its own URL, not the built-in gallery adapter. Documentation covers routing, arrival-order matching, evidence, and full-retry limitations.
+
+Testing exposed that the example Vite proxy left the browser stream pending after upstream abortion. Updated its development proxy to propagate that interruption to the downstream response. No application failure was fabricated to make the test pass.
+
+Verification: final `npm run verify` passed all 59 tests, type checks, and both builds. New coverage verifies simulated and forwarded first-request faults, successful retry, rejection of extra requests, invalid plans/checkpoints, fixed versus duplicated output, missing retry, persistent intermediate-check failures, CLI reports, and workbench Stop/Replay. Diff formatting passed. Only public synthetic example code was used.
+
+Limits: requests share one scenario/upstream and are matched by arrival order; this models an interrupted stream and explicit full retry, not a browser-wide outage, stream resumption, automatic retry backoff, or upstream side-effect cancellation. Connected configs remain JSON-edited. Next: improve app-specific connection diagnostics before adding more transport protocols.

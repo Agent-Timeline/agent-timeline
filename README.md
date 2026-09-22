@@ -22,7 +22,7 @@ Run a small independent chat app with Send, Cancel, and intentionally buggy/fixe
 
 ## Connect your own development app
 
-Start with `npm run init -- --app-url http://127.0.0.1:3000` to generate a local configuration and check app/proxy reachability. Review the generated selectors and route your development endpoint to the proxy. The JSON configuration controls the app URL, proxy endpoint, browser actions, and assertions. **Connected app (config file)** in the workbench and `npm run run:app` execute the same runner and return observed events and assertion results. See [configuration and commands](docs/RUNNER.md). This currently runs from a source checkout; no npm package is published.
+Start with `npm run init -- --app-url http://127.0.0.1:3000` to generate a local configuration and check app/proxy reachability. Review the generated selectors and route your development endpoint to the proxy. The JSON configuration controls the app URL, proxy endpoint, browser actions, and assertions. **Connected app (config file)** in the workbench and `npm run run:app` execute the same runner and return observed events and assertion results. See [configuration and commands](docs/RUNNER.md). A [connected recovery example](docs/RUNNER.md#connection-loss-and-recovery-against-a-connected-app) disconnects the first stream, clicks Retry, and checks intermediate state and duplicate-free final output. This currently runs from a source checkout; no npm package is published.
 
 ## Run locally
 

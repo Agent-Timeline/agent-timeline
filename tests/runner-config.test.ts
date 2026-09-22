@@ -14,3 +14,16 @@ test('runner configuration validates host, actions, faults and assertion evidenc
   (c:any)=>c.setup[0].atMs=12,
  ]){const config=fixture();mutate(config);assert.throws(()=>parseRunnerConfig(config))}
 });
+
+test('recovery plans validate ordered outcomes and checkpoint boundaries',()=>{
+ const recovery=()=>JSON.parse(readFileSync('examples/proxy/recovery.config.json','utf8'));
+ assert.equal(parseRunnerConfig(recovery()).proxy.requests?.length,2);
+ for(const mutate of [
+  (c:any)=>c.proxy.requests=[],
+  (c:any)=>c.proxy.requests[0].disconnectMs=-1,
+  (c:any)=>c.proxy.requests[0].expectedOutcome='complete',
+  (c:any)=>c.proxy.expectedRequests=2,
+  (c:any)=>c.proxy.disconnectMs=400,
+  (c:any)=>c.assertions[0].atMs=c.observeUntilMs,
+ ]){const config=recovery();mutate(config);assert.throws(()=>parseRunnerConfig(config))}
+});

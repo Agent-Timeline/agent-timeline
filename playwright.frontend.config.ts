@@ -7,6 +7,8 @@ export default defineConfig({
     { command: 'npm run dev:frontend -- --port 4417', env: { TIMELINE_PROVIDER_PORT: '4418' }, url: 'http://127.0.0.1:4417', reuseExistingServer: false },
     { command: 'npm run dev:example -- --port 4419', env: { TIMELINE_PROVIDER_PORT: '4418' }, url: 'http://127.0.0.1:4419', reuseExistingServer: false },
     { command: 'npm run dev:example -- --port 4469', env: { TIMELINE_PROVIDER_PORT: '4468' }, url: 'http://127.0.0.1:4469', reuseExistingServer: false },
+    { command: 'npm run dev:backend', env: { TIMELINE_PROVIDER_PORT: '4478', TIMELINE_RUNNER_CONFIG: 'examples/proxy/recovery.config.json' }, url: 'http://127.0.0.1:4478/api/scenario', reuseExistingServer: false },
+    { command: 'npm run dev:frontend -- --port 4477', env: { TIMELINE_PROVIDER_PORT: '4478' }, url: 'http://127.0.0.1:4477', reuseExistingServer: false },
   ],
   reporter: 'list',
 });

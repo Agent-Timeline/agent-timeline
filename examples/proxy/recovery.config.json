@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "name": "Connection loss and recovery",
+  "appUrl": "http://127.0.0.1:4469",
+  "proxy": {
+    "port": 4468,
+    "path": "/api/generate",
+    "scenario": {
+      "version": 1,
+      "id": "cancel-late-result",
+      "prompt": "Suggest a title for my weekend project",
+      "cancelAtMs": 700,
+      "observeUntilMs": 1800,
+      "events": [
+        {
+          "atMs": 100,
+          "type": "text",
+          "text": "A possible title is "
+        },
+        {
+          "atMs": 1100,
+          "type": "text",
+          "text": "Weekend Atlas"
+        },
+        {
+          "atMs": 1300,
+          "type": "complete"
+        }
+      ],
+      "assertion": {
+        "type": "textAbsentAfterCancel",
+        "text": "Weekend Atlas"
+      }
+    },
+    "requests": [
+      {
+        "disconnectMs": 400,
+        "expectedOutcome": "aborted"
+      },
+      {
+        "expectedOutcome": "complete"
+      }
+    ]
+  },
+  "setup": [
+    {
+      "atMs": 0,
+      "type": "select",
+      "selector": "#mode",
+      "value": "fixed"
+    }
+  ],
+  "actions": [
+    {
+      "atMs": 0,
+      "type": "click",
+      "selector": "#send"
+    },
+    {
+      "atMs": 1000,
+      "type": "click",
+      "selector": "#retry"
+    }
+  ],
+  "observeUntilMs": 2700,
+  "assertions": [
+    {
+      "type": "textContains",
+      "selector": "#status",
+      "text": "Connection error:",
+      "atMs": 750
+    },
+    {
+      "type": "textEquals",
+      "selector": "#response",
+      "text": "A possible title is ",
+      "atMs": 750
+    },
+    {
+      "type": "textEquals",
+      "selector": "#response",
+      "text": "A possible title is Weekend Atlas"
+    },
+    {
+      "type": "textEquals",
+      "selector": "#status",
+      "text": "Completed"
+    }
+  ],
+  "evidence": [
+    {
+      "selector": "#events",
+      "text": "1300ms \u00b7 complete"
+    },
+    {
+      "selector": "#events",
+      "text": "Stream ended"
+    }
+  ]
+}

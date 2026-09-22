@@ -79,3 +79,7 @@ Tests start a fresh provider on port 4438 and example on 4439; those ports must 
 ## Using this as a starting point
 
 Keep your app's real rendering and state handling, adapt the client calls and development proxy to your environment, and retain app-specific configuration in your own repository. See [the provider guide](../../docs/PROVIDER.md). This example supplies app-specific Playwright tests, not a general external-app runner or a connection wizard for arbitrary apps.
+
+## Retry after a connection failure
+
+A transport error enables the real Retry button. Fixed mode replaces the abandoned partial response; Buggy mode deliberately retains it to demonstrate duplicated output. Use the [connected recovery configuration](../../docs/RUNNER.md#connection-loss-and-recovery-against-a-connected-app) to inject a first-request disconnect and verify recovery. The Vite development proxy propagates upstream abortion to the browser instead of leaving Fetch pending.

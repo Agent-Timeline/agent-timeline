@@ -187,7 +187,7 @@ ID: `duplicate` — gallery.
 
 ## Not implemented
 
-External host adapters, gallery JSON import/export, a general-purpose editable multi-request timeline, persistent save/load checks, real route reload scenarios, cancellation acknowledgements, and voice interactions remain outside current coverage. These are possible extensions, not implemented scenarios or release commitments.
+Gallery JSON import/export, a general-purpose editable multi-request timeline, persistent save/load checks, real route reload scenarios, cancellation acknowledgements, and voice interactions remain outside current coverage. These are possible extensions, not implemented scenarios or release commitments.
 
 ## Connection loss and recovery
 
@@ -204,3 +204,15 @@ External host adapters, gallery JSON import/export, a general-purpose editable m
 ### Editing recovery timing
 
 Connection recovery now has a gallery timeline with connection actions, two request lanes, and assertions. Timing fields update the schedule and runner; Restore recovery timings restores the preset. The abandoned first-stream events are scheduled at observation-end minus 1 ms and observation-end, and should be aborted before arrival. Request 2 offsets are derived from the retry start; browser/provider scheduling remains approximate. Invalid event order disables Run. Edits are in memory only; this editor does not yet import/export multi-request JSON or drive arbitrary external apps.
+
+### Connected-app proxy recovery
+
+**Problem:** a real response interruption can leave a chat stuck loading or cause partial text to be appended again on retry.
+
+**Sequence:** Send at run start; proxy emits first text at request offset 100 ms and disconnects request 1 at offset 400 ms. Check status and partial text at run time 750 ms. Click Retry at 1000 ms; request 2 has no injected disconnect. Observe until 2700 ms.
+
+**Expected behavior:** show a connection error while preserving the partial response; enable Retry; replace the partial text with a complete response and clear the loading state.
+
+**Assertions:** intermediate status contains `Connection error:` and response exactly equals `A possible title is `. Final response exactly equals `A possible title is Weekend Atlas`, with status `Completed`. Require request 1 fault injection/abortion, request 2 completion, and app evidence of terminal delivery. Missing delivery is ERROR; duplicated text is FAIL. Stop is incomplete, never PASS.
+
+**Limitations:** separate JSON configuration for the shared runner, not the gallery editor. Same scenario/upstream for each request; arrival-order matching; explicit retry; no browser-wide offline state or stream resumption. See [runner setup](RUNNER.md#connection-loss-and-recovery-against-a-connected-app).

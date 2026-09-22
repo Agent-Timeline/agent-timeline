@@ -34,3 +34,18 @@ test('downstream abort closes the upstream stream',async()=>{
  const target=await listen(upstream);const proxy=createStreamProxy({upstream:new URL(target)});const base=await listen(proxy.server);
  try{const controller=new AbortController();const response=await fetch(base+'/api/generate',{method:'POST',body:'{}',signal:controller.signal});const reader=response.body!.getReader();await reader.read();controller.abort();await Promise.race([ended,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Upstream not closed')),1000))]);await reader.cancel().catch(()=>{})}finally{proxy.close();upstream.close();upstream.closeAllConnections()}
 });
+
+for(const mode of ['simulate','forward'] as const)test(`${mode}: disconnect first request, complete retry, reject extra requests`,async()=>{
+ const upstream=createServer((_req,res)=>{res.writeHead(200);res.write('partial');const timer=setTimeout(()=>res.end(' finished'),100);res.on('close',()=>clearTimeout(timer))});
+ const target=await listen(upstream);const observations:string[]=[];
+ const proxy=createStreamProxy({...(mode==='simulate'?{scenario}:{upstream:new URL(target)}),requests:[{disconnectMs:40,expectedOutcome:'aborted'},{expectedOutcome:'complete'}],onEvent:(kind,request)=>observations.push(`${request}:${kind}`)});
+ const base=await listen(proxy.server);
+ try{
+  const first=await post(base);await assert.rejects(first.text());
+  const second=await post(base);assert.equal(second.status,200);assert.match(await second.text(),mode==='simulate'?/complete/:/finished/);
+  assert.equal((await post(base)).status,503);
+  assert.ok(observations.includes('1:disconnect'));assert.ok(observations.includes('1:aborted'));
+  assert.ok(observations.includes('2:complete'));assert.ok(!observations.includes('2:disconnect'));
+  assert.ok(observations.includes('3:unexpected-request'));
+ }finally{proxy.close();upstream.close();upstream.closeAllConnections()}
+});
