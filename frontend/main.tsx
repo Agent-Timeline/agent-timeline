@@ -9,7 +9,7 @@ import { createTimelineProvider } from '../client/provider';
 import { ExternalChat, type ExternalChatHandle } from './ExternalChat';
 import { ScenarioGallery } from './ScenarioGallery';
 type Observation = { atMs: number; kind: 'cancel' | 'arrival'; label: string };
-type Result = { kind: 'pass' | 'fail' | 'error' | 'stopped'; message: string; eventIndex: number | null };
+type Result = { kind: 'pass' | 'fail' | 'error' | 'stopped'; message: string; eventIndex: number | null; failure?: { expected: string; actual: string; detectedAtMs: number; cancelAtMs: number; scenario: Scenario } };
 function App({selector}: {selector: React.ReactNode}) {
   const [scenario, setScenario] = useState<Scenario>();
   const [elapsed, setElapsed] = useState(0);
@@ -71,15 +71,15 @@ function App({selector}: {selector: React.ReactNode}) {
     const controller = new AbortController(); transport.current = controller;
     let cancelled = false, terminal = false, started = false, delivered = 0;
     let lastEvent: number | null = null;
-    let violation: { eventIndex: number | null; elapsed: number } | null = null;
-    let startTime = 0;
+    let violation: { eventIndex: number | null; elapsed: number; actual: string } | null = null;
+    let startTime = 0, cancelObservedAt = 0;
     const submittedAt = performance.now();
     const record = (kind: Observation['kind'], label: string) => setObservations(old => [...old, { atMs: Math.round(performance.now() - submittedAt), kind, label }]);
-    cancelHook.current = () => { if (cancelled) return; cancelled = true; record('cancel', 'Cancel requested'); if (automatic) inspect(); };
+    cancelHook.current = () => { if (cancelled) return; cancelled = true; cancelObservedAt = Math.round(performance.now() - submittedAt); record('cancel', 'Cancel requested'); if (automatic) inspect(); };
     setResult(null); setText(''); setLog([]); setObservations([]); setBusy(true); setStatus('Waiting'); append('Request submitted');
     const inspect = () => {
       if (cancelled && !violation && responseNode.current?.textContent?.includes(run.assertion.text)) {
-        violation = { eventIndex: lastEvent, elapsed: Math.round(performance.now() - startTime) };
+        violation = { eventIndex: lastEvent, elapsed: Math.round(performance.now() - submittedAt), actual: responseNode.current.textContent ?? '' };
       }
     };
     const failRun = (message: string) => { cleanup(); controller.abort(); active.current = null; setResult({ kind: 'error', message, eventIndex: null }); setStatus('Run error'); setBusy(false); };
@@ -101,8 +101,8 @@ function App({selector}: {selector: React.ReactNode}) {
                   failRun('Incomplete run: cancellation or scheduled provider events were not observed.'); return;
                 }
                 cleanup(); setElapsed(run.observeUntilMs);
-                const found = violation as { eventIndex: number | null; elapsed: number } | null;
-                setResult(found ? { kind: 'fail', eventIndex: found.eventIndex, message: `Forbidden text appeared after cancellation at ${found.elapsed}ms. ${found.eventIndex === null ? '' : `Last delivered event: #${found.eventIndex + 1}.`}` } : { kind: 'pass', eventIndex: null, message: `“${run.assertion.text}” stayed absent after cancellation through ${run.observeUntilMs}ms.` });
+                const found = violation as { eventIndex: number | null; elapsed: number; actual: string } | null;
+                setResult(found ? { kind: 'fail', eventIndex: found.eventIndex, failure: { expected: run.assertion.text, actual: found.actual, detectedAtMs: found.elapsed, cancelAtMs: cancelObservedAt, scenario: run }, message: `Forbidden text appeared after cancellation at ${found.elapsed}ms. ${found.eventIndex === null ? '' : `Last delivered event: #${found.eventIndex + 1}.`}` } : { kind: 'pass', eventIndex: null, message: `“${run.assertion.text}” stayed absent after cancellation through ${run.observeUntilMs}ms.` });
                 setBusy(false);
               }, run.observeUntilMs));
             }
@@ -138,8 +138,8 @@ function App({selector}: {selector: React.ReactNode}) {
     {(validation || fileError) && <p role="alert" className="validation">{fileError || validation}</p>}
     <div className="workbench-grid">{scenario && <TimelineEditor onRun={() => void submit(true)} onStop={stopTest} canRun={!busy && !validation} scenario={scenario} onChange={edit} disabled={busy} failedEvent={result?.eventIndex ?? null} elapsedMs={elapsed} running={busy} started={clockAnchor !== null || elapsed > 0} receivedCount={observations.filter(event => event.kind === 'arrival').length} cancelled={observations.some(event => event.kind === 'cancel')}/>}
     <aside>{target === 'external' ? <ExternalChat ref={external} scenario={scenario} mode={mode} onBusy={setBusy} onProgress={value => { setClockAnchor(performance.now() - value.elapsedMs); setElapsed(value.elapsedMs); setObservations(value.observations); setLog(value.log.split('\n')); }} onResult={value => { setClockAnchor(null); if (value.kind !== 'error') setElapsed(scenario?.observeUntilMs ?? 0); setResult(value); setObservations(value.observations); setLog(value.log.split('\n')); }}/> : <section className="panel"><span className="eyebrow">REAL UI / SIMULATED PROVIDER</span><h2>Demo application</h2><p className="prompt">{scenario?.prompt || 'Loading scenario…'}</p><div className="actions"><button disabled={!scenario || busy || !!validation} onClick={() => void submit(false)}>Send prompt</button><button ref={cancelButton} disabled={!busy || status === 'Cancelled'} onClick={cancel}>Cancel request</button></div><p role="status">{status}</p><div ref={responseNode} data-testid="response" className="response">{text}</div></section>}
-    <section className={`panel verdict ${result?.kind || ''}`} aria-live="polite" data-testid="verdict"><h2>{result ? result.kind === 'pass' ? 'PASS' : result.kind === 'fail' ? 'FAIL' : result.kind === 'stopped' ? 'STOPPED · INCOMPLETE' : 'RUN ERROR' : busy ? 'Observing…' : 'Ready to verify'}</h2><p>{result?.message || 'Run the scenario to cancel automatically and check for forbidden text throughout the observation window.'}</p></section></aside></div>
-    <section className="panel"><h2>Observed interaction timeline</h2><p className="hint">Browser receipt times measured from request submission. Cancellation is local; this provider sends no cancellation acknowledgement. Accepted events are handled by the app; the verdict checks what actually appears.</p><ol data-testid="observed-timeline" className="observed-timeline">{observations.map((event, index) => <li key={index} className={`observed-${event.kind}`}><code>{event.atMs} ms</code><span>{event.label}</span></li>)}</ol>{!observations.length && <p>Run a scenario to see cancellation and response arrivals.</p>}</section>
+    <section className={`panel verdict ${result?.kind || ''}`} aria-live="polite" data-testid="verdict"><h2>{result ? result.kind === 'pass' ? 'PASS' : result.kind === 'fail' ? 'FAIL' : result.kind === 'stopped' ? 'STOPPED · INCOMPLETE' : 'RUN ERROR' : busy ? 'Observing…' : 'Ready to verify'}</h2><p>{result?.message || 'Run the scenario to cancel automatically and check for forbidden text throughout the observation window.'}</p>{result?.failure && <div data-testid="failure-details"><h3>Why this failed</h3><dl><dt>Expected</dt><dd>“{result.failure.expected}” must stay absent after cancellation.</dd><dt>Actual response at first detection</dt><dd><pre>{result.failure.actual}</pre></dd><dt>Timing</dt><dd>Cancel observed at {result.failure.cancelAtMs} ms; forbidden text first detected at {result.failure.detectedAtMs} ms — {Math.max(0,result.failure.detectedAtMs-result.failure.cancelAtMs)} ms later.</dd></dl><p>Highlighted arrival is the last delivered event before detection, not proof that it caused the failure.</p><button onClick={() => void submit(true)}>Replay failed scenario</button><p className="hint">Reuses these scenario settings. Browser delivery timing may vary. Export JSON to save the sequence.</p></div>}</section></aside></div>
+    <section className="panel"><h2>Observed interaction timeline</h2><p className="hint">Browser receipt times measured from request submission. Cancellation is local; this provider sends no cancellation acknowledgement. Accepted events are handled by the app; the verdict checks what actually appears.</p><ol data-testid="observed-timeline" className="observed-timeline">{observations.map((event, index) => <li key={index} className={`observed-${event.kind} ${result?.kind === 'fail' && (event.kind === 'cancel' || (result.eventIndex !== null && event.label.includes(`event #${result.eventIndex+1} ·`))) ? 'failure-context' : ''}`}><code>{event.atMs} ms</code><span>{event.label}</span></li>)}</ol>{!observations.length && <p>Run a scenario to see cancellation and response arrivals.</p>}</section>
     <section className="panel"><h2>Event log</h2><pre data-testid="event-log">{log.join('\n') || 'Waiting for a request.'}</pre></section><footer>Local development · No live model · Provider offsets start at request receipt; browser actions start at acknowledgement.</footer></main>;
 }
 function Workbench() {

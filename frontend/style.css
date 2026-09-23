@@ -117,3 +117,5 @@ a{color:var(--public-b7ceff);text-underline-offset:3px}a:hover{color:var(--publi
 .recovery-trail::before{content:"";position:absolute;right:0;top:0;bottom:0;width:240px;background:linear-gradient(to right,transparent,var(--recovery-trail-color))}
 .recovery-lane>strong{position:relative;z-index:1}.recovery-event{z-index:1}
 @media(prefers-reduced-motion:reduce){.recovery-trail{display:none}}
+
+.failure-context{border-inline-start:4px solid currentColor;padding-inline-start:1rem;font-weight:600} [data-testid="failure-details"] dd{margin:0 0 1rem;overflow-wrap:anywhere} [data-testid="failure-details"] dt{font-weight:600} [data-testid="failure-details"] pre{white-space:pre-wrap}

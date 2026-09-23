@@ -254,3 +254,11 @@ Testing exposed that the example Vite proxy left the browser stream pending afte
 Verification: final `npm run verify` passed all 59 tests, type checks, and both builds. New coverage verifies simulated and forwarded first-request faults, successful retry, rejection of extra requests, invalid plans/checkpoints, fixed versus duplicated output, missing retry, persistent intermediate-check failures, CLI reports, and workbench Stop/Replay. Diff formatting passed. Only public synthetic example code was used.
 
 Limits: requests share one scenario/upstream and are matched by arrival order; this models an interrupted stream and explicit full retry, not a browser-wide outage, stream resumption, automatic retry backoff, or upstream side-effect cancellation. Connected configs remain JSON-edited. Next: improve app-specific connection diagnostics before adding more transport protocols.
+
+## Actionable cancellation failure report
+
+The built-in cancellation workbench now captures the response text at first forbidden-text detection, explains the expected invariant, and reports observed cancellation/detection times on the same browser clock. Related cancellation and last-arrival entries are highlighted, with an explicit warning that the last arrival is context rather than proven causality. Replay failed scenario reruns the current unchanged scenario; timing edits clear the result, and JSON export preserves the sequence. Browser timing remains nondeterministic.
+
+Scope: built-in cancellation runs. Standalone chat, configured runner and recovery reports retain their existing reporting; extending structured evidence across those paths remains outstanding. No private design or application source was used.
+
+Verification: `npm run verify` passed (backend and frontend checks, builds, unit and browser suites, standalone example and proxy test). A separate browser check confirmed captured failure text, both context highlights, and successful replay of the buggy sequence. `git diff --check` passed.
