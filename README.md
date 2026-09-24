@@ -162,3 +162,7 @@ After a connection-recovery run finishes or is stopped, choose **Inspect replay*
 ## CLI stream proxy
 
 Run `npm run proxy -- --scenario scenarios/cancel-late-result.json` for a local scripted stream, or configure a fixed development upstream with `--upstream`. First-response delay and forced disconnect controls are available. See the [setup and Playwright late-chunk example](examples/proxy/README.md). `npm run test:proxy` tests the standalone app at its own URL without an iframe. This proxy command runs from a source checkout; no npm package is published. Use [the connected-app runner](docs/RUNNER.md) to configure browser actions and assertions.
+
+### Connected-app failure evidence
+
+Failed configured assertions include captured UI text, expected text, selector, observation time, and phase (`first-violation`, `checkpoint`, or `final`) in both CLI JSON reports and the connected workbench. Intermediate failures retain their original evidence even when the UI recovers. Evidence uses the browser observation clock; action and proxy events use the runner clock, so nearby events are context rather than proven causes. **Replay again** reloads the current config file. Review captured app text before sharing a report.

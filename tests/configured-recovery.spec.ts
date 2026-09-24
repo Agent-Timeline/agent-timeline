@@ -15,7 +15,7 @@ test('recovery passes fixed app and fails duplicated retry text',async()=>{
  config.setup[0].value='buggy';
  const buggy=await runConfiguredApp(config);
  expect(buggy.kind,buggy.message).toBe('fail');expect(buggy.assertions[2].passed).toBe(false);
- expect(buggy.assertions[3].passed).toBe(true); // Completion alone cannot hide duplication.
+ expect(buggy.assertions[2].evidence?.phase).toBe('final');expect(buggy.assertions[2].evidence?.actual).not.toBe(buggy.assertions[2].evidence?.expected);expect(buggy.assertions[3].passed).toBe(true); // Completion alone cannot hide duplication.
 });
 
 test('recovery requires the retry and preserves failed intermediate checks',async()=>{
@@ -25,7 +25,7 @@ test('recovery requires the retry and preserves failed intermediate checks',asyn
  config.assertions[0].text='not the disconnected state';
  const result=await runConfiguredApp(config);
  expect(result.kind,result.message).toBe('fail');expect(result.assertions[0].passed).toBe(false);
- expect(result.assertions[3].passed).toBe(true);
+ expect(result.assertions[0].evidence?.phase).toBe('checkpoint');expect(result.assertions[0].evidence?.actual).toContain('Connection error:');expect(result.assertions[3].passed).toBe(true);
 });
 
 test('recovery workbench runs, stops and replays the shared runner',async({page})=>{

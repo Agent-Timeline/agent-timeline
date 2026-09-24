@@ -28,20 +28,19 @@ export async function runConfiguredApp(input:RunnerConfig, options:{signal?:Abor
     for(const a of [...config.assertions,...config.evidence])if(await page.locator(a.selector).count()!==1)throw new Error(`Check must match one element: ${a.selector}`);
     await page.evaluate(`(() => {
       const assertions = ${JSON.stringify(config.assertions)};
-      const state={start:performance.now(),violations:assertions.map(()=>false),missing:false};
+      const state={start:performance.now(),violations:assertions.map(()=>false),failures:assertions.map(()=>null),missing:false};
       window.__agentTimeline=state;
-      const inspect=()=>{const elapsed=performance.now()-state.start;assertions.forEach((a,i)=>{const nodes=document.querySelectorAll(a.selector);if(nodes.length!==1){state.missing=true;return}if(a.type==='textAbsent'&&elapsed>=a.fromMs&&nodes[0].textContent?.includes(a.text))state.violations[i]=true})};
+      const inspect=()=>{const elapsed=performance.now()-state.start;assertions.forEach((a,i)=>{const nodes=document.querySelectorAll(a.selector);if(nodes.length!==1){state.missing=true;return}if(a.type==='textAbsent'&&elapsed>=a.fromMs&&nodes[0].textContent?.includes(a.text)){state.violations[i]=true;state.failures[i]??={actual:nodes[0].textContent??'',atMs:Math.round(elapsed)}}})};
       const observer=new MutationObserver(inspect);observer.observe(document.body,{subtree:true,childList:true,characterData:true});
       const interval=setInterval(inspect,10);inspect();
       window.__agentTimelineRead=()=>{inspect();observer.disconnect();clearInterval(interval);return state};
     })()`);
     started=performance.now();recording=true;emit('run','Started');
-    const checkpoints = new Map<number,boolean>();
+    const checkpoints = new Map<number,{passed:boolean;actual:string;atMs:number}>();
     const inspectText = async (a: {selector:string;text:string;type:string}) => {
       const target=page.locator(a.selector);
       if(await target.count()!==1)throw new Error(`Check must match one element: ${a.selector}`);
-      const text=await target.textContent();
-      return a.type==='textEquals'?text===a.text:text?.includes(a.text)===true;
+      return target.evaluate((node,a)=>{const actual=node.textContent??'';return {actual,atMs:Math.round(performance.now()-(window as any).__agentTimeline.start),passed:a.type==='textEquals'?actual===a.text:actual.includes(a.text)}},a);
     };
     const schedule = [
       ...config.actions.map(step=>({atMs:step.atMs, action:step, assertion:-1})),
@@ -51,7 +50,7 @@ export async function runConfiguredApp(input:RunnerConfig, options:{signal?:Abor
       await delay(Math.max(0,step.atMs-(performance.now()-started)),undefined,{signal});
       if(performance.now()-started>=config.observeUntilMs)throw new Error('Action or checkpoint missed observation deadline');
       if(step.action){await action(step.action);emit('action',`${step.action.type} ${step.action.selector}`)}
-      else {const a=config.assertions[step.assertion];const passed=await inspectText(a);checkpoints.set(step.assertion,passed);emit('checkpoint',`${passed?'PASS':'FAIL'} ${a.type} ${a.selector} (scheduled ${step.atMs}ms)`)}
+      else {const a=config.assertions[step.assertion];const checked=await inspectText(a);const passed=checked.passed;checkpoints.set(step.assertion,checked);emit('checkpoint',`${passed?'PASS':'FAIL'} ${a.type} ${a.selector} (scheduled ${step.atMs}ms)`)}
     }
     await delay(Math.max(0,config.observeUntilMs-(performance.now()-started)),undefined,{signal});
     const state=await page.evaluate(()=>(window as any).__agentTimelineRead());
@@ -69,7 +68,12 @@ export async function runConfiguredApp(input:RunnerConfig, options:{signal?:Abor
       if(requests!==expected||(config.proxy.expectedOutcome==='aborted'?aborted!==expected:completed!==expected))throw new Error('Expected proxy request count/outcome not observed');
     }
     const assertions=[];
-    for(const [i,a] of config.assertions.entries()){const passed=a.type==='textAbsent'?!state.violations[i]:a.atMs!==undefined?checkpoints.get(i)===true:await inspectText(a);assertions.push({description:`${a.type}: ${a.selector} / ${a.text}`,passed});emit('assertion',`${passed?'PASS':'FAIL'} ${a.type} ${a.selector}`)}
+    for(const [i,a] of config.assertions.entries()){
+      const sample=a.type==='textAbsent'?state.failures[i]:a.atMs!==undefined?checkpoints.get(i):await inspectText(a);
+      const passed=a.type==='textAbsent'?!state.violations[i]:sample?.passed===true;
+      assertions.push({description:`${a.type}: ${a.selector} / ${a.text}`,passed,...(!passed&&sample?{evidence:{selector:a.selector,type:a.type,expected:a.text,actual:sample.actual,atMs:sample.atMs,phase:a.type==='textAbsent'?'first-violation' as const:a.atMs!==undefined?'checkpoint' as const:'final' as const,clock:'browser-observation' as const}}:{})});
+      emit('assertion',`${passed?'PASS':'FAIL'} ${a.type} ${a.selector}`);
+    }
     return report(assertions.every(a=>a.passed)?'pass':'fail',assertions.every(a=>a.passed)?'All configured assertions passed.':'A configured assertion failed.',assertions);
   }catch(error){return report(options.signal?.aborted?'stopped':'error',options.signal?.aborted?'Stopped; observation incomplete.':error instanceof Error?error.message:String(error));}
   finally{recording=false;clearTimeout(budget);options.signal?.removeEventListener('abort',abort);signal.removeEventListener('abort',stopBrowser);controller.abort();proxy.close();await browser?.close();}

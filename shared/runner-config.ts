@@ -44,4 +44,4 @@ export function parseRunnerConfig(input:unknown):RunnerConfig {
   return structuredClone(input) as unknown as RunnerConfig;
 }
 export interface RunEvent { atMs:number; kind:string; message:string }
-export interface RunReport { id:string; kind:'pass'|'fail'|'error'|'stopped'; message:string; events:RunEvent[]; assertions:{description:string;passed:boolean}[] }
+export interface RunReport { id:string; kind:'pass'|'fail'|'error'|'stopped'; message:string; events:RunEvent[]; assertions:{description:string;passed:boolean;evidence?:{selector:string;type:string;expected:string;actual:string;atMs:number;phase:'first-violation'|'checkpoint'|'final';clock:'browser-observation'}}[] }

@@ -19,7 +19,7 @@ test('workbench runs and stops the configured app without embedding',async({page
 });
 test('same runner catches buggy UI and rejects missing evidence',async()=>{
  const config=await load();config.setup[0].value='buggy';
- const bad=await runConfiguredApp(config);expect(bad.kind).toBe('fail');expect(bad.assertions[0].passed).toBe(false);
+ const bad=await runConfiguredApp(config);expect(bad.kind).toBe('fail');expect(bad.assertions[0].passed).toBe(false);expect(bad.assertions[0].evidence).toMatchObject({type:'textAbsent',phase:'first-violation',clock:'browser-observation'});expect(bad.assertions[0].evidence!.actual).toContain(config.assertions[0].text);expect(bad.assertions[0].evidence!.atMs).toBeGreaterThanOrEqual(config.assertions[0].type==='textAbsent'?config.assertions[0].fromMs:0);
  config.setup[0].value='fixed';config.evidence[0].text='impossible evidence';
  expect((await runConfiguredApp(config)).kind).toBe('error');
  config.actions[0].selector='#missing-button';
@@ -30,4 +30,15 @@ test('CLI uses the same config and returns a passing JSON report',async()=>{
  let stdout='',stderr='';child.stdout.on('data',chunk=>stdout+=chunk);child.stderr.on('data',chunk=>stderr+=chunk);
  const code=await new Promise<number|null>((resolve,reject)=>{child.on('error',reject);child.on('exit',resolve)});
  expect(code,stderr+stdout).toBe(0);expect(JSON.parse(stdout).kind).toBe('pass');
+});
+
+test('workbench renders captured assertion evidence without treating it as markup',async({page})=>{
+ await page.route('**/api/runner/run',route=>route.fulfill({json:{id:'evidence-preview'}}));
+ await page.route('**/api/runner/run/evidence-preview',route=>route.fulfill({json:{status:'finished',events:[],report:{id:'evidence-preview',kind:'fail',message:'A configured assertion failed.',events:[],assertions:[{description:'textAbsent: #response / late',passed:false,evidence:{selector:'#response',type:'textAbsent',expected:'late',actual:'<b>late response</b>',atMs:1234,phase:'first-violation',clock:'browser-observation'}}]}}}));
+ await page.goto('/');await page.getByLabel('Workbench scenario').selectOption('connected');
+ await page.getByRole('button',{name:'Run scenario',exact:true}).click();
+ const evidence=page.getByTestId('configured-failure');
+ await expect(evidence).toContainText('<b>late response</b>');await expect(evidence.locator('b')).toHaveCount(0);
+ await expect(evidence).toContainText('1234 ms');await expect(evidence).toContainText('#response');
+ await expect(page.getByRole('button',{name:'Replay again'})).toBeEnabled();
 });

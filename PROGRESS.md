@@ -262,3 +262,11 @@ The built-in cancellation workbench now captures the response text at first forb
 Scope: built-in cancellation runs. Standalone chat, configured runner and recovery reports retain their existing reporting; extending structured evidence across those paths remains outstanding. No private design or application source was used.
 
 Verification: `npm run verify` passed (backend and frontend checks, builds, unit and browser suites, standalone example and proxy test). A separate browser check confirmed captured failure text, both context highlights, and successful replay of the buggy sequence. `git diff --check` passed.
+
+## Connected-app assertion evidence
+
+The shared runner now includes structured evidence for failed assertions: selector, assertion type, expected text, captured UI text, detection time, and evaluation phase. Absence assertions preserve the first violation; checkpoint assertions preserve the text at that checkpoint even if the UI later recovers. Final assertions capture the final evaluated text. CLI JSON and connected workbench share this report. The workbench displays the evidence alongside existing replay controls.
+
+Timing boundary: evidence timestamps use the browser observation clock; action/proxy events retain the runner clock. The UI labels these clocks and does not infer causal attribution or cancellation acknowledgement. Replay reloads the current local config, not a stored immutable recording. Reports contain app text and should be reviewed before sharing. No private application was used.
+
+Verification: `npm run verify` passed. Additional connected-runner/recovery tests passed, including structured first-violation and final evidence and safe workbench rendering. The new checkpoint evidence test initially expected the gallery's status wording; it was corrected to the standalone app's actual `Connection error:` text and passed on rerun. `git diff --check` passed.
