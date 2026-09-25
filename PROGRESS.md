@@ -270,3 +270,21 @@ The shared runner now includes structured evidence for failed assertions: select
 Timing boundary: evidence timestamps use the browser observation clock; action/proxy events retain the runner clock. The UI labels these clocks and does not infer causal attribution or cancellation acknowledgement. Replay reloads the current local config, not a stored immutable recording. Reports contain app text and should be reviewed before sharing. No private application was used.
 
 Verification: `npm run verify` passed. Additional connected-runner/recovery tests passed, including structured first-violation and final evidence and safe workbench rendering. The new checkpoint evidence test initially expected the gallery's status wording; it was corrected to the standalone app's actual `Connection error:` text and passed on rerun. `git diff --check` passed.
+
+## Fresh public checkout onboarding check
+
+Cloned the public GitHub repository at 5b1f2ad into a temporary folder and installed independent dependencies. The documented npm install completed with zero reported vulnerabilities; the Playwright Chromium installation command completed using the machine's existing browser cache. Started the synthetic example and connected workbench using the documented commands. Buggy mode produced FAIL with captured evidence, and fixed mode produced PASS in both workbench and CLI (expected CLI exit codes 1 and 0). The init command generated a local config and passed app/proxy reachability checks. No private application or private design package was accessed.
+
+Documentation fixes: added clone/cd steps and lockfile-based installation to the main quickstart, replaced outdated built-in-only scope claims, and added a connected-app fail/fix walkthrough explaining file-based behavior selection, Chromium, server restarts, and expected failure exit codes.
+
+Limits: this validates an independent public source checkout on this existing macOS/Node environment, not a clean OS, uncached browser download, Windows/Linux, or integration with an unrelated developer's application. Only documentation changed; no runtime changes or publishing.
+
+The revised `npm ci` command also passed against the original committed lockfile, followed by a passing connected CLI run. An initial retest encountered a lockfile altered by this audit's `npm install --prefix` through macOS's `/tmp` symlink; restoring the committed lockfile and using the canonical checkout path resolved it without repository dependency changes. Documentation formatting checks passed; full code verification was not rerun because this milestone changes documentation only.
+
+## GitHub Actions regression workflow
+
+Added `.github/workflows/agent-timeline.yml`: pull-request, main-push and manual runs exercise cancellation and recovery against the public synthetic chat. Jobs install Node 22 and Chromium, wait for app readiness, preserve CLI failure exit codes, clean up the server, and upload reports/logs with seven-day retention even after test failures. Repository permissions are read-only. Local report output is gitignored.
+
+Added `docs/CI.md` with adaptation instructions for a separate app/tool checkout, report download guidance, exit codes, and branch-protection setup. A workflow alone does not require passing checks before merging. No private app, source, credentials or design package is involved.
+
+Verification: `npm run verify` passed. Workflow YAML parsed and its extracted Bash passed syntax checking. Both exact scenario shell steps passed locally, produced JSON reports, and stopped their app processes. Hosted Ubuntu execution and artifact upload will be exercised by the first GitHub Actions run after push; local verification does not prove that hosted run succeeded.

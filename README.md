@@ -29,7 +29,9 @@ Start with `npm run init -- --app-url http://127.0.0.1:3000` to generate a local
 Requires Node.js 22.12 or newer.
 
 ```bash
-npm install
+git clone https://github.com/Agent-Timeline/agent-timeline.git
+cd agent-timeline
+npm ci
 npm run dev
 ```
 
@@ -93,7 +95,9 @@ Both automatic workbench runs and browser tests observe response mutations acros
 
 ## Current boundaries
 
-Scenarios supply the prompt, provider events, cancellation delay, observation duration, and assertion. Workbench replay currently controls the built-in demo only. Browser actions in headless verification remain demo-specific, not a general action registry. The CLI reads the default scenario file; exported files can be imported in the workbench or used to replace that fixture. Tests wait for the provider-start acknowledgement before timing cancellation; browser timing is approximate, while provider offsets are measured from request receipt. The server binds to loopback and is development-only. No API keys or live models are needed.
+The built-in timeline uses version-1 scenarios for prompts, provider events, cancellation timing, and text-absence assertions. It targets the built-in demo or the standalone chat through its example adapter. Connected-app mode uses a separate runner configuration with app URL, CSS selectors, actions, assertions, and proxy settings; it opens the app at its own URL without an iframe. Connected scenarios are edited in JSON, not in the built-in timeline.
+
+`npm run run:app -- --config FILE` runs a selected connected configuration. The older `verify:fixed` and `verify:buggy` commands exercise the default demo fixture. Browser scheduling is approximate; provider offsets and browser observation timestamps have distinct origins. Servers bind to loopback and are development-only. No API keys or live models are required for the synthetic examples.
 
 ## Design
 
@@ -166,3 +170,7 @@ Run `npm run proxy -- --scenario scenarios/cancel-late-result.json` for a local 
 ### Connected-app failure evidence
 
 Failed configured assertions include captured UI text, expected text, selector, observation time, and phase (`first-violation`, `checkpoint`, or `final`) in both CLI JSON reports and the connected workbench. Intermediate failures retain their original evidence even when the UI recovers. Evidence uses the browser observation clock; action and proxy events use the runner clock, so nearby events are context rather than proven causes. **Replay again** reloads the current config file. Review captured app text before sharing a report.
+
+## Run on pull requests
+
+The [GitHub Actions workflow](.github/workflows/agent-timeline.yml) runs cancellation and recovery checks against the synthetic chat and saves JSON reports and app logs, including after failures. See [CI setup and adaptation](docs/CI.md) to use the same runner with your own app.

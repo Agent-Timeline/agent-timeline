@@ -12,3 +12,5 @@ private-integrations/
 
 # Local starter config may contain private app selectors.
 agent-timeline.config.json
+# Local CI reports can contain captured application text.
+reports/

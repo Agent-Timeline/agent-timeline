@@ -1,0 +1,65 @@
+name: Agent Timeline regression
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stream-regression:
+    name: Stream regression (${{ matrix.scenario }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [host, recovery]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run connected app scenario
+        shell: bash
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+          TIMELINE_PROVIDER_PORT: '4468'
+        run: |
+          mkdir -p reports
+          node node_modules/vite/bin/vite.js --config examples/chat/vite.config.ts --port 4469 > reports/app.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in {1..60}; do
+            if ! kill -0 "$app_pid" 2>/dev/null; then
+              cat reports/app.log
+              exit 2
+            fi
+            if curl --fail --silent http://127.0.0.1:4469/ > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            cat reports/app.log
+            exit 2
+          fi
+          npm run run:app -- --config "examples/proxy/$SCENARIO.config.json" --report reports/result.json
+      - name: Save report and app log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-timeline-${{ matrix.scenario }}
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 7

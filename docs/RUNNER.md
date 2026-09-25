@@ -37,7 +37,7 @@ Init exits 0 when generation and checks succeed (or checks were explicitly skipp
 Install dependencies and Chromium once:
 
 ```sh
-npm install
+npm ci
 npx playwright install chromium
 ```
 
@@ -62,6 +62,17 @@ TIMELINE_RUNNER_CONFIG=examples/proxy/host.config.json npm run dev
 ```
 
 Open http://127.0.0.1:4317, select **Connected app (config file)**, and click **Run scenario**. Stop test returns an incomplete result; Replay again creates a fresh browser context. Each run reloads the configured file. The connected mode displays configuration and observed results; its actions are currently edited in JSON, not by dragging the built-in demo timeline. Only the latest run is retained in memory.
+
+## See a failure, then verify the fix
+
+Use only the synthetic example above for this walkthrough. In `examples/proxy/host.config.json`, change the first `setup` action's `value` from `fixed` to `buggy`. This selects the example app's deliberately unsafe behavior; the workbench does not have a separate behavior switch for connected runs.
+
+1. In **Connected app (config file)**, click **Run scenario**. Expect **FAIL** and a **Why this failed** section with the captured late response.
+2. Run the same CLI command above. Expect exit code **1**, report kind `fail`, and assertion evidence. This is the intended demonstration, not a setup error.
+3. Change that setup value back to `fixed`.
+4. Click **Replay again** and rerun the CLI. Both should pass; the CLI exits **0**. Each run reloads the file.
+
+Keep the example terminal running throughout. Install Chromium before connected runs, even when starting them from the workbench. If the workbench is already running without `TIMELINE_RUNNER_CONFIG`, stop that command and restart it with the configuration shown above. Do not start a second workbench or proxy on the same ports. **ERROR** indicates incomplete setup or delivery, and is distinct from the intentional **FAIL**.
 
 ## Configure your app
 
