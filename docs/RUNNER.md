@@ -61,7 +61,7 @@ For the workbench, start:
 TIMELINE_RUNNER_CONFIG=examples/proxy/host.config.json npm run dev
 ```
 
-Open http://127.0.0.1:4317, select **Connected app (config file)**, and click **Run scenario**. Stop test returns an incomplete result; Replay again creates a fresh browser context. Each run reloads the configured file. The connected mode displays configuration and observed results; its actions are currently edited in JSON, not by dragging the built-in demo timeline. Only the latest run is retained in memory.
+Open http://127.0.0.1:4317, select **Connected app (config file)**, and click **Run scenario**. Stop test returns an incomplete result; Replay again creates a fresh browser context. Run scenario executes the visible configuration snapshot. Replay again uses the previous report snapshot. Reload file explicitly discards edits and reads the configured file. Connected mode includes an editable timing timeline and a full JSON editor. Only the latest run is retained in memory.
 
 ## See a failure, then verify the fix
 
@@ -70,7 +70,7 @@ Use only the synthetic example above for this walkthrough. In `examples/proxy/ho
 1. In **Connected app (config file)**, click **Run scenario**. Expect **FAIL** and a **Why this failed** section with the captured late response.
 2. Run the same CLI command above. Expect exit code **1**, report kind `fail`, and assertion evidence. This is the intended demonstration, not a setup error.
 3. Change that setup value back to `fixed`.
-4. Click **Replay again** and rerun the CLI. Both should pass; the CLI exits **0**. Each run reloads the file.
+4. Click **Reload file**, then **Run scenario**, and rerun the CLI. Both should pass; the CLI exits **0**. Replay again deliberately preserves the previous run configuration.
 
 Keep the example terminal running throughout. Install Chromium before connected runs, even when starting them from the workbench. If the workbench is already running without `TIMELINE_RUNNER_CONFIG`, stop that command and restart it with the configuration shown above. Do not start a second workbench or proxy on the same ports. **ERROR** indicates incomplete setup or delivery, and is distinct from the intentional **FAIL**.
 
@@ -143,3 +143,11 @@ Use `textContains` or `textEquals` with `atMs` for intermediate checkpoints. Che
 Your development reverse proxy must pass stream interruptions to the browser. The example's Vite proxy destroys the downstream response on upstream `aborted`; otherwise Fetch can remain pending and the test reports the disabled Retry control as an error. This is transport behavior, not a fake application error.
 
 This tests abrupt stream loss and explicit full retry. It does not switch the browser offline, model a prolonged outage, resume a stream, verify backoff, or prove upstream side effects were cancelled. With a forwarding upstream, response content still depends on that upstream.
+
+## Editable connected sequence
+
+The connected timeline is a projection of `RunnerConfig`, the same executable JSON accepted by the CLI; it is not another scenario format. Drag markers, use arrow keys or numeric fields to edit action times, assertion checkpoints/window starts, provider offsets and existing request faults. Final assertions remain pinned to the observation deadline. Full JSON editing covers text, selectors, setup, adding/removing events and faults. Invalid configurations cannot run or export. Edits remain in memory until exported.
+
+Each lane labels its time origin: run start for actions, browser observation start for assertions, and request receipt for provider/fault offsets. The provider template is reused for every request. Retiming a cancellation does not automatically change an assertion's observation start. No causal or clock alignment is inferred.
+
+Run sends a bounded validated snapshot to the backend, which keeps the app URL, proxy route/port and upstream bound to the configured file. Change destinations in that file and reload. CLI and workbench reports include `scenario`, the configuration actually executed; replay uses it rather than a changed file. Export runner config produces a file accepted by `npm run run:app -- --config FILE`. Stop remains incomplete. Reports now include configuration as well as captured app text, so keep private reports in the consuming repository.

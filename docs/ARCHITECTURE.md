@@ -225,3 +225,9 @@ Current limits: CSS selectors, click/fill/select actions, timed text-absence che
 ## Connected recovery execution
 
 Optional ordered request plans assign fault offsets and expected transport outcomes per matched POST. The proxy numbers arrivals, injects a disconnect only for the selected request, and rejects requests beyond the plan. The runner requires both injected-fault evidence and the expected outcome for each request. A later request can complete normally against the same scenario/upstream. Timed text checkpoints run alongside real browser actions; their failures remain in the final verdict. CLI and workbench use the same implementation. This is explicit retry after stream interruption, not browser-offline simulation or stream resumption.
+
+## Shared connected scenario and editable runner snapshot
+
+`RunnerConfig` is the executable contract for connected cancellation and recovery, CLI, CI and workbench. `shared/runner-timeline.ts` projects its actions, assertions, provider template and request faults into labeled clock lanes and applies validated timing edits. It introduces no second execution schema. The workbench submits the visible snapshot to the same backend runner, and reports retain that configuration for replay/export. Host destinations stay bound to the configured file; the API limits submitted JSON to 1 MB and allows one active run.
+
+The legacy in-page demo, iframe example and gallery remain compatibility paths with separate execution. This milestone unifies connected visual editing with CLI/CI execution; it does not yet complete their migration or remove legacy version-1 provider metadata.

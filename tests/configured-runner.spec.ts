@@ -42,3 +42,16 @@ test('workbench renders captured assertion evidence without treating it as marku
  await expect(evidence).toContainText('1234 ms');await expect(evidence).toContainText('#response');
  await expect(page.getByRole('button',{name:'Replay again'})).toBeEnabled();
 });
+
+test('edited timeline snapshot reaches the shared runner and exports for CLI',async({page,request})=>{
+ await page.goto('/');await page.getByLabel('Workbench scenario').selectOption('connected');
+ await page.getByLabel('click #cancel milliseconds',{exact:true}).fill('800');
+ const post=page.waitForRequest(r=>r.url().endsWith('/api/runner/run')&&r.method()==='POST');
+ await page.getByRole('button',{name:'Run scenario',exact:true}).click();
+ expect((await post).postDataJSON().actions[1].atMs).toBe(800);
+ await expect(page.getByTestId('configured-verdict')).toHaveText('PASS',{timeout:15000});
+ const again=page.waitForRequest(r=>r.url().endsWith('/api/runner/run')&&r.method()==='POST');await page.getByRole('button',{name:'Replay again'}).click();expect((await again).postDataJSON().actions[1].atMs).toBe(800);
+ await expect(page.getByTestId('configured-verdict')).toHaveText('PASS',{timeout:15000});
+ const config=await load();config.appUrl='http://127.0.0.1:9999';const denied=await request.post('/api/runner/run',{headers:{'X-Agent-Timeline':'1'},data:config});expect(denied.status()).toBe(400);
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Export runner config'}).click();const download=await downloadPromise;const file=await download.path();expect(parseRunnerConfig(JSON.parse(await readFile(file!,'utf8'))).actions[1].atMs).toBe(800);
+});

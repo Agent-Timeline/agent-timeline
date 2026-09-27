@@ -119,3 +119,4 @@ a{color:var(--public-b7ceff);text-underline-offset:3px}a:hover{color:var(--publi
 @media(prefers-reduced-motion:reduce){.recovery-trail{display:none}}
 
 .failure-context{border-inline-start:4px solid currentColor;padding-inline-start:1rem;font-weight:600} [data-testid="failure-details"] dd{margin:0 0 1rem;overflow-wrap:anywhere} [data-testid="failure-details"] dt{font-weight:600} [data-testid="failure-details"] pre{white-space:pre-wrap}
+.runner-lane{margin-block:1.5rem}.runner-scale{display:flex;justify-content:space-between;font-size:.85rem}.runner-track{position:relative;border-top:1px solid currentColor;margin:1rem 1rem 0;padding-top:1rem}.runner-track>button{position:absolute;top:-1rem;transform:translateX(-50%);padding:0;width:2rem;height:2rem;touch-action:none;cursor:ew-resize}.runner-track label{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}.runner-track input{width:8rem}.runner-json{width:100%;min-height:16rem;font-family:monospace}

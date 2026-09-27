@@ -1,0 +1,16 @@
+import React,{useRef,useState} from 'react';
+import type {RunnerConfig} from '../shared/runner-config';
+import {runnerMarks,retimeRunner} from '../shared/runner-timeline';
+export function RunnerTimeline({config,disabled,onChange}:{config:RunnerConfig;disabled:boolean;onChange:(value:RunnerConfig)=>void}){
+ const [error,setError]=useState('');const [draft,setDraft]=useState<{id:string;time:number}|null>(null);
+ const drag=useRef<{id:string;pointer:number;x:number;time:number;width:number;scale:number}|null>(null);
+ const marks=runnerMarks(config);const lanes=[...new Set(marks.map(m=>m.lane))];
+ const commit=(id:string,time:number)=>{try{onChange(retimeRunner(config,id,time));setError('')}catch(e){setError((e as Error).message)}};
+ return <section className="panel"><h2>Edit connected sequence</h2><p>Each lane names its clock. These are planned offsets, not observed arrivals. The provider template repeats for each request. Drag a marker or edit its number; arrow keys move 10 ms (Shift: 100 ms). Invalid edits are rejected.</p>{error&&<p role="alert">{error}</p>}
+ <fieldset disabled={disabled}><label>Observation window (ms)<input type="number" min="1" max="60000" value={config.observeUntilMs} onChange={e=>onChange({...config,observeUntilMs:Number(e.target.value)})}/></label>
+ {lanes.map(lane=>{const entries=marks.filter(m=>m.lane===lane);const scale=Math.max(config.observeUntilMs,...entries.map(m=>m.atMs),1);return <section key={lane} className="runner-lane"><h3>{lane}</h3><div className="runner-scale"><span>0 ms</span><span>{scale} ms</span></div>{entries.map(m=>{const assertion=m.id.startsWith('assertion:')?config.assertions[Number(m.id.split(':')[1])]:undefined;const fixed=assertion&&assertion.type!=='textAbsent'&&assertion.atMs===undefined;const time=draft?.id===m.id?draft.time:m.atMs;return <div className="runner-track" key={m.id}><button type="button" role="slider" aria-label={`${m.label} time`} aria-valuemin={0} aria-valuemax={m.maxMs} aria-valuenow={time} disabled={disabled||!!fixed} style={{left:`${time/scale*100}%`}}
+ onPointerDown={e=>{if(disabled||fixed)return;e.currentTarget.setPointerCapture(e.pointerId);drag.current={id:m.id,pointer:e.pointerId,x:e.clientX,time:m.atMs,width:e.currentTarget.parentElement!.clientWidth,scale};setDraft({id:m.id,time:m.atMs})}}
+ onPointerMove={e=>{const d=drag.current;if(d&&d.pointer===e.pointerId)setDraft({id:d.id,time:Math.max(0,Math.min(m.maxMs,Math.round(d.time+(e.clientX-d.x)/d.width*d.scale)))})}}
+ onPointerUp={()=>{if(drag.current&&draft&&!disabled)commit(draft.id,draft.time);drag.current=null;setDraft(null)}} onPointerCancel={()=>{drag.current=null;setDraft(null)}} onLostPointerCapture={()=>{drag.current=null;setDraft(null)}}
+ onKeyDown={e=>{const step=e.shiftKey?100:10;const time=e.key==='Home'?0:e.key==='End'?m.maxMs:e.key==='ArrowLeft'?m.atMs-step:e.key==='ArrowRight'?m.atMs+step:null;if(time!==null){e.preventDefault();commit(m.id,Math.max(0,Math.min(m.maxMs,time)))}}}>●</button><label>{m.label}<input aria-label={`${m.label} milliseconds`} type="number" min="0" max={m.maxMs} disabled={!!fixed} value={time} onChange={e=>commit(m.id,Number(e.target.value))}/></label></div>})}</section>})}</fieldset></section>;
+}

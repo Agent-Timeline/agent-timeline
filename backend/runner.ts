@@ -12,7 +12,7 @@ export async function runConfiguredApp(input:RunnerConfig, options:{signal?:Abor
   const signal=controller.signal;const budget=setTimeout(abort,config.observeUntilMs+30000);
   const proxy=createStreamProxy({...config.proxy,upstream:config.proxy.upstream?new URL(config.proxy.upstream):undefined,onEvent:(kind,request)=>{if(recording){const kinds=observed.get(request)??new Set<string>();kinds.add(kind);observed.set(request,kinds);if(kind==='request')requests++;if(kind==='complete')completed++;if(kind==='aborted')aborted++;emit('proxy',`request ${request}: ${kind}`)}}});
   let browser:Awaited<ReturnType<typeof chromium.launch>>|undefined;
-  const report=(kind:RunReport['kind'],message:string,assertions:RunReport['assertions']=[]):RunReport=>({id,kind,message,events,assertions});
+  const report=(kind:RunReport['kind'],message:string,assertions:RunReport['assertions']=[]):RunReport=>({id,kind,message,events,assertions,scenario:structuredClone(config)});
   const stopBrowser=()=>{void browser?.close();proxy.close()};signal.addEventListener('abort',stopBrowser,{once:true});
   try{
     if(signal.aborted)throw new Error('Stopped');

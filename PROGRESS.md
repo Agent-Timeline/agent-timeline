@@ -288,3 +288,13 @@ Added `.github/workflows/agent-timeline.yml`: pull-request, main-push and manual
 Added `docs/CI.md` with adaptation instructions for a separate app/tool checkout, report download guidance, exit codes, and branch-protection setup. A workflow alone does not require passing checks before merging. No private app, source, credentials or design package is involved.
 
 Verification: `npm run verify` passed. Workflow YAML parsed and its extracted Bash passed syntax checking. Both exact scenario shell steps passed locally, produced JSON reports, and stopped their app processes. Hosted Ubuntu execution and artifact upload will be exercised by the first GitHub Actions run after push; local verification does not prove that hosted run succeeded.
+
+## Editable connected scenario snapshots
+
+Added a shared timeline projection of the executable RunnerConfig contract for connected cancellation and recovery. App actions, assertion times/window starts, provider template events and existing per-request faults can be retimed by dragging, keyboard or numeric input. Full JSON editing covers other fields; export feeds the existing CLI/CI runner. The backend accepts a validated snapshot up to 1 MB, preserves configured endpoint boundaries and guards against concurrent runs.
+
+Run executes the visible snapshot. Reports now retain the executed configuration; Replay again reuses it, and Reload file explicitly discards edits. Separate clock labels prevent provider offsets from being mistaken for absolute UI times. Final assertions remain pinned to the observation deadline. Invalid edits cannot execute.
+
+Verification: final `npm run verify` passed after fixing an asynchronous guard type check. Added unit coverage for immutable retiming, validation and recovery clocks; browser coverage confirms edited timing reaches the runner, survives replay/export and cannot redirect the configured app. Manual browser dragging changed cancellation timing and the connected editor was visually inspected. Documentation and diff checks passed.
+
+Remaining migration: legacy in-page demo/gallery and iframe runners are retained for compatibility. Connected visual editing, CLI and CI now use one contract and runner; this is not yet removal of all legacy scenario schemas or runners. No private app or design package was accessed.

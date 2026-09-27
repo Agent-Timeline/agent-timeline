@@ -95,7 +95,7 @@ Both automatic workbench runs and browser tests observe response mutations acros
 
 ## Current boundaries
 
-The built-in timeline uses version-1 scenarios for prompts, provider events, cancellation timing, and text-absence assertions. It targets the built-in demo or the standalone chat through its example adapter. Connected-app mode uses a separate runner configuration with app URL, CSS selectors, actions, assertions, and proxy settings; it opens the app at its own URL without an iframe. Connected scenarios are edited in JSON, not in the built-in timeline.
+The built-in timeline uses version-1 scenarios for prompts, provider events, cancellation timing, and text-absence assertions. It targets the built-in demo or the standalone chat through its example adapter. Connected-app mode uses a separate runner configuration with app URL, CSS selectors, actions, assertions, and proxy settings; it opens the app at its own URL without an iframe. Connected scenarios have their own editable timing lanes and full JSON editor, using the same configuration consumed by the CLI.
 
 `npm run run:app -- --config FILE` runs a selected connected configuration. The older `verify:fixed` and `verify:buggy` commands exercise the default demo fixture. Browser scheduling is approximate; provider offsets and browser observation timestamps have distinct origins. Servers bind to loopback and are development-only. No API keys or live models are required for the synthetic examples.
 
@@ -169,7 +169,7 @@ Run `npm run proxy -- --scenario scenarios/cancel-late-result.json` for a local 
 
 ### Connected-app failure evidence
 
-Failed configured assertions include captured UI text, expected text, selector, observation time, and phase (`first-violation`, `checkpoint`, or `final`) in both CLI JSON reports and the connected workbench. Intermediate failures retain their original evidence even when the UI recovers. Evidence uses the browser observation clock; action and proxy events use the runner clock, so nearby events are context rather than proven causes. **Replay again** reloads the current config file. Review captured app text before sharing a report.
+Failed configured assertions include captured UI text, expected text, selector, observation time, and phase (`first-violation`, `checkpoint`, or `final`) in both CLI JSON reports and the connected workbench. Intermediate failures retain their original evidence even when the UI recovers. Evidence uses the browser observation clock; action and proxy events use the runner clock, so nearby events are context rather than proven causes. **Replay again** uses the captured configuration; **Reload file** explicitly loads disk changes. Review captured app text before sharing a report.
 
 ## Run on pull requests
 
