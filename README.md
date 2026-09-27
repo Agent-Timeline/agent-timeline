@@ -4,6 +4,8 @@ Reproduce the exact moment your AI interface breaks, then turn it into a regress
 
 Agent Timeline is an open-source project for reproducing timing bugs in AI interfaces: streaming responses, cancellations, retries, and delayed results.
 
+Built-in cancellation and recovery now execute through the same Playwright runner as the CLI, returning observed UI state and assertion results to the workbench. Chromium must be installed for automatic runs. Other gallery scenarios and the optional iframe example retain their original runners.
+
 The local workbench includes an editable event timeline, a streaming provider, automatic cancellation replay, and pass/fail assertions against a real demo chat. A reusable TypeScript client connects to the simulated provider; the standalone chat can now be controlled from the workbench using its example-specific adapter. A configurable proxy and shared Playwright runner also test local apps at their own URLs without embedding.
 
 ![Agent Timeline workbench with an editable event timeline and demo application](docs/images/workbench.png)
@@ -61,7 +63,7 @@ Events must be ordered, finish with one completion or error event, and fit insid
 
 ## Live replay
 
-During replay, a playhead tracks browser elapsed time from provider connection. Event markers gain a checkmark when delivery is observed, and cancellation is highlighted when it actually occurs. The observed timeline and event log update during standalone-chat runs as well as built-in demo runs. Reset clears the clock, markers, and observations. Scheduled event positions remain editable when idle; the playhead is approximate browser timing, not a guarantee of provider delivery.
+During built-in automatic replay, the playhead tracks approximate runner elapsed time; the standalone-chat adapter tracks time from provider connection. Event markers gain a checkmark when delivery is observed, and cancellation is highlighted when it actually occurs. The observed timeline and event log update during standalone-chat runs as well as built-in demo runs. Reset clears the clock, markers, and observations. Scheduled event positions remain editable when idle; the playhead is approximate browser timing, not a guarantee of provider delivery.
 
 ## Observed interaction timeline
 
@@ -95,7 +97,7 @@ Both automatic workbench runs and browser tests observe response mutations acros
 
 ## Current boundaries
 
-The built-in timeline uses version-1 scenarios for prompts, provider events, cancellation timing, and text-absence assertions. It targets the built-in demo or the standalone chat through its example adapter. Connected-app mode uses a separate runner configuration with app URL, CSS selectors, actions, assertions, and proxy settings; it opens the app at its own URL without an iframe. Connected scenarios have their own editable timing lanes and full JSON editor, using the same configuration consumed by the CLI.
+The built-in timeline uses version-1 scenarios for prompts, provider events, cancellation timing, and text-absence assertions. It targets the built-in demo or the standalone chat through its example adapter. Built-in cancellation and recovery settings are converted into the same runner configuration used by connected-app mode, which includes app URL, CSS selectors, actions, assertions, and proxy settings; it opens the app at its own URL without an iframe. Connected scenarios have their own editable timing lanes and full JSON editor, using the same configuration consumed by the CLI.
 
 `npm run run:app -- --config FILE` runs a selected connected configuration. The older `verify:fixed` and `verify:buggy` commands exercise the default demo fixture. Browser scheduling is approximate; provider offsets and browser observation timestamps have distinct origins. Servers bind to loopback and are development-only. No API keys or live models are required for the synthetic examples.
 

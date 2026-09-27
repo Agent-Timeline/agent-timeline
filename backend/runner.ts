@@ -22,15 +22,16 @@ export async function runConfiguredApp(input:RunnerConfig, options:{signal?:Abor
     await context.route('**/*',route=>{const url=new URL(route.request().url());if(url.origin===new URL(config.appUrl).origin)return route.continue();blocked=true;return route.abort()});
     const page=await context.newPage();page.setDefaultTimeout(5000);
     await page.goto(config.appUrl,{waitUntil:'domcontentloaded',timeout:10000});
-    const action=async(a:BrowserAction)=>{const element=page.locator(a.selector);if(await element.count()!==1)throw new Error(`Action must match one element: ${a.selector}`);if(a.type==='click')await element.click();else if(a.type==='fill')await element.fill(a.value!);else await element.selectOption(a.value!);};
+    const action=async(a:BrowserAction)=>{const element=page.locator(a.selector);await element.first().waitFor({state:'attached'});if(await element.count()!==1)throw new Error(`Action must match one element: ${a.selector}`);if(a.type==='click')await element.click();else if(a.type==='fill')await element.fill(a.value!);else await element.selectOption(a.value!);};
     for(const step of config.setup)await action(step);
     // Assertions use CSS selectors. Missing elements are errors, not absence successes.
     for(const a of [...config.assertions,...config.evidence])if(await page.locator(a.selector).count()!==1)throw new Error(`Check must match one element: ${a.selector}`);
+    await page.exposeFunction('__agentTimelineCapture',(value:unknown)=>{if(recording)emit('ui',JSON.stringify(value))});
     await page.evaluate(`(() => {
-      const assertions = ${JSON.stringify(config.assertions)};
+      const assertions = ${JSON.stringify(config.assertions)};const capture = ${JSON.stringify(config.capture??{})};let previous='';
       const state={start:performance.now(),violations:assertions.map(()=>false),failures:assertions.map(()=>null),missing:false};
       window.__agentTimeline=state;
-      const inspect=()=>{const elapsed=performance.now()-state.start;assertions.forEach((a,i)=>{const nodes=document.querySelectorAll(a.selector);if(nodes.length!==1){state.missing=true;return}if(a.type==='textAbsent'&&elapsed>=a.fromMs&&nodes[0].textContent?.includes(a.text)){state.violations[i]=true;state.failures[i]??={actual:nodes[0].textContent??'',atMs:Math.round(elapsed)}}})};
+      const inspect=()=>{const elapsed=performance.now()-state.start;const values=Object.fromEntries(Object.entries(capture).map(([key,selector])=>[key,document.querySelector(selector)?.textContent??'']));const serialized=JSON.stringify(values);if(serialized!==previous){previous=serialized;window.__agentTimelineCapture({atMs:Math.round(elapsed),values})?.catch(()=>{})}assertions.forEach((a,i)=>{const nodes=document.querySelectorAll(a.selector);if(nodes.length!==1){state.missing=true;return}if(a.type==='textAbsent'&&elapsed>=a.fromMs&&nodes[0].textContent?.includes(a.text)){state.violations[i]=true;state.failures[i]??={actual:nodes[0].textContent??'',atMs:Math.round(elapsed)}}})};
       const observer=new MutationObserver(inspect);observer.observe(document.body,{subtree:true,childList:true,characterData:true});
       const interval=setInterval(inspect,10);inspect();
       window.__agentTimelineRead=()=>{inspect();observer.disconnect();clearInterval(interval);return state};

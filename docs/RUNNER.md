@@ -86,7 +86,7 @@ Copy [host.config.json](../examples/proxy/host.config.json) into your own reposi
 | `proxy.upstream` | Alternative fixed local upstream URL. Forwards streamed bytes; does not convert provider formats or forward credentials. Use exactly one of scenario/upstream. |
 | `proxy.delayMs` | Delay before response headers, not per-token jitter. |
 | `proxy.disconnectMs` | Force response closure after elapsed time from request receipt. |
-| `proxy.requests` | Optional ordered request plans with `expectedOutcome`, `delayMs`, and `disconnectMs`. Replaces global fault/outcome/count fields. |
+| `proxy.requests` | Optional ordered request plans with `expectedOutcome`, `delayMs`, `disconnectMs`, and an optional simulated `scenario`. Replaces global fault/outcome/count fields. |
 | `proxy.expectedRequests` | Required proxy request count, default 1. |
 | `proxy.expectedOutcome` | Required completion or abortion for every request; default `complete`, alternative `aborted`. |
 | `setup` | `click`, `fill`, or `select` actions before recording; use `atMs: 0`. |
@@ -134,7 +134,7 @@ The config submits a request, cuts its stream after 400 ms, checks the connectio
 ]
 ```
 
-Plans are assigned by arrival order of POSTs to the configured proxy path, starting from 1 per run. Both requests use the configured simulated scenario or upstream. Faults are relative to each request's receipt. Request 2 has no disconnect fault: recovery means a fresh request is allowed to finish, not that the first stream resumes. Additional requests are rejected and make the run incomplete. Background/automatic retries count too; use a dedicated test route and adjust plans/actions for your app. Do not combine request plans with global delay/disconnect or expected-count/outcome fields.
+Plans are assigned by arrival order of POSTs to the configured proxy path, starting from 1 per run. Each request uses its own optional simulated `scenario`, otherwise the configured simulated scenario or upstream. Per-request scenarios require simulation mode. Faults are relative to each request's receipt. Request 2 has no disconnect fault: recovery means a fresh request is allowed to finish, not that the first stream resumes. Additional requests are rejected and make the run incomplete. Background/automatic retries count too; use a dedicated test route and adjust plans/actions for your app. Do not combine request plans with global delay/disconnect or expected-count/outcome fields.
 
 Observed events identify request numbers and distinguish fault injection, abortion, and completion. A planned disconnect must actually fire; merely seeing an aborted request cannot satisfy it. Missing retry/delivery produces ERROR, and assertion failures produce FAIL. Stop closes active connections and returns STOPPED; Replay creates a fresh proxy and request sequence.
 
@@ -148,6 +148,10 @@ This tests abrupt stream loss and explicit full retry. It does not switch the br
 
 The connected timeline is a projection of `RunnerConfig`, the same executable JSON accepted by the CLI; it is not another scenario format. Drag markers, use arrow keys or numeric fields to edit action times, assertion checkpoints/window starts, provider offsets and existing request faults. Final assertions remain pinned to the observation deadline. Full JSON editing covers text, selectors, setup, adding/removing events and faults. Invalid configurations cannot run or export. Edits remain in memory until exported.
 
-Each lane labels its time origin: run start for actions, browser observation start for assertions, and request receipt for provider/fault offsets. The provider template is reused for every request. Retiming a cancellation does not automatically change an assertion's observation start. No causal or clock alignment is inferred.
+Each lane labels its time origin: run start for actions, browser observation start for assertions, and request receipt for provider/fault offsets. The default provider template is reused unless a request plan supplies its own scenario; those templates appear in separate request lanes. Retiming a cancellation does not automatically change an assertion's observation start. No causal or clock alignment is inferred.
 
 Run sends a bounded validated snapshot to the backend, which keeps the app URL, proxy route/port and upstream bound to the configured file. Change destinations in that file and reload. CLI and workbench reports include `scenario`, the configuration actually executed; replay uses it rather than a changed file. Export runner config produces a file accepted by `npm run run:app -- --config FILE`. Stop remains incomplete. Reports now include configuration as well as captured app text, so keep private reports in the consuming repository.
+
+## Built-in demo adapters
+
+Cancellation and recovery use this runner too. Their editors convert settings into a `RunnerConfig`; the report includes that executable snapshot. `capture` optionally maps up to ten names to CSS selectors whose text is recorded as `ui` events for workbench display. These observations do not replace assertions or delivery evidence. They can contain app text, so treat reports as application data. Other gallery cases and the iframe example still use their original runners.

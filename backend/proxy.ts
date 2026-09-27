@@ -23,6 +23,7 @@ export function createStreamProxy(options: ProxyOptions) {
   if (options.requests) {
     if (options.requests.length < 1 || options.requests.length > 100 || options.delayMs !== undefined || options.disconnectMs !== undefined) throw new Error('Invalid or conflicting request plan');
     for (const request of options.requests) {
+      if(request.scenario){if(!options.scenario)throw Error('Request scenario needs simulation');parseScenario(request.scenario)}
       if (!['complete', 'aborted'].includes(request.expectedOutcome)) throw new Error('Invalid request outcome');
       for (const value of [request.delayMs, request.disconnectMs]) if (value !== undefined && (!Number.isInteger(value) || value < 0 || value > 60000)) throw new Error('Invalid request fault time');
       if (request.disconnectMs !== undefined && request.expectedOutcome !== 'aborted') throw new Error('Disconnect requires aborted outcome');
@@ -65,7 +66,7 @@ export function createStreamProxy(options: ProxyOptions) {
         res.flushHeaders();
         await write(JSON.stringify({ type: 'start', requestId: input.requestId }) + '\n');
         const start = performance.now();
-        for (const event of options.scenario.events) {
+        for (const event of (settings.scenario ?? options.scenario).events) {
           await delay(Math.max(0, event.atMs - (performance.now() - start)), undefined, { signal });
           await write(JSON.stringify({ ...event, requestId: input.requestId }) + '\n');
         }

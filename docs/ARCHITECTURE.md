@@ -2,11 +2,15 @@
 
 ## Current implementation
 
-The standalone workbench edits scenarios in memory and sends a validated snapshot with each provider request. A local Node server emits the scheduled stream. The browser drives the demo's cancel control and observes DOM mutations through the configured window. The Playwright suite separately exercises the same demo for headless verification. Both use the scenario schema and provider, but the standalone chat has an example-specific iframe adapter; the connected-app mode now uses one backend Playwright runner from both the workbench and CLI. Built-in demos retain their separate runners.
+Cancellation and connection recovery convert their editable settings into the shared `RunnerConfig` contract. The backend Playwright runner drives isolated instances of the existing demo UIs with real Send, Cancel, Disconnect, Restore and Retry controls. The local proxy provides scripted streams; captured DOM observations and the runner's verdict return to the visible workbench. The CLI can execute the same report snapshot. Other gallery scenarios and the optional standalone-chat iframe retain their legacy runners.
 
-The workbench reports the last delivered provider event when forbidden text is first observed. Batched DOM updates can combine events, so the highlight is diagnostic context rather than guaranteed causal attribution. Provider event times begin at request receipt; automatic browser actions begin at the start acknowledgement. Real browser scheduling and transport latency are not virtualized.
+`shared/demo-config.ts` supplies the built-in adapters. Recovery uses distinct per-request stream templates and requires the first request to abort and the retry to complete. Assertions include both the intermediate disconnected state and final output. The workbench does not calculate a separate verdict for these two automatic demos. Manual demo Send/Cancel remains available outside an automatic run.
 
-The workbench now selects cancellation or connection recovery. Recovery uses a separate gallery runner with editable multi-request timings, stop/replay, and in-memory inspection of recorded text/status. These are not yet one general scenario format or one runner. The existing verification CLI wraps demo-specific Playwright tests. A source-checkout proxy CLI now supports scripted NDJSON or a fixed development upstream, first-response delay, and forced disconnect; its standalone Playwright example uses a normal app page. The configurable external-app runner is implemented; see [host configuration](RUNNER.md). The reusable provider client uses a custom NDJSON protocol and is not a published npm package.
+Provider offsets start at request receipt; browser actions start at runner observation start. Captured UI snapshots and assertion evidence use the browser observation clock. App arrival labels use the app's request-submission clock. Browser scheduling and network latency are real, not virtualized. A highlighted last arrival is diagnostic context rather than proven causality.
+
+The backend defaults its built-in target URL to the frontend port one below the provider port, and its temporary proxy to the provider port plus 20. Override with `TIMELINE_FRONTEND_PORT` and `TIMELINE_DEMO_PROXY_PORT`. Both processes must be running and Chromium installed. Built-in runs use the same one-active-run guard as configured runs. The bridge `/api/runner/stream` forwards only to that fixed loopback proxy; it is not a general forwarding endpoint.
+
+The configurable external-app runner is documented in [host configuration](RUNNER.md). The provider client uses custom NDJSON and is not a published npm package.
 
 ## Product direction
 

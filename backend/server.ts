@@ -3,7 +3,8 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { parseScenario, replay } from '../shared/engine.js';
 const scenario = parseScenario(JSON.parse(await readFile(new URL('../scenarios/cancel-late-result.json', import.meta.url), 'utf8')));
-const runnerApi = createRunnerApi(process.env.TIMELINE_RUNNER_CONFIG);
+const port = Number(process.env.TIMELINE_PROVIDER_PORT ?? 4318);
+const runnerApi = createRunnerApi(process.env.TIMELINE_RUNNER_CONFIG,{origin:`http://127.0.0.1:${Number(process.env.TIMELINE_FRONTEND_PORT??port-1)}`,port:Number(process.env.TIMELINE_DEMO_PROXY_PORT??port+20)});
 const server = createServer(async (req, res) => {
   if (await runnerApi.handle(req, res)) return;
   if (req.url === '/api/example-target' && req.method === 'GET') {
@@ -39,7 +40,6 @@ const server = createServer(async (req, res) => {
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found' }));
 });
-const port = Number(process.env.TIMELINE_PROVIDER_PORT ?? 4318);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid TIMELINE_PROVIDER_PORT');
 server.listen(port, '127.0.0.1', () => console.log(`Agent Timeline provider: http://127.0.0.1:${port}`));
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { runnerApi.close(); server.close(); server.closeAllConnections(); });

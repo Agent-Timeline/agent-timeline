@@ -1,9 +1,11 @@
+import {runDemo,uiSnapshots} from './demo-run';
 import {RecoveryTimeline, defaultRecoveryTiming, configureRecovery, recoveryValidation} from './RecoveryTimeline';
 import { ThemeToggle } from './ThemeToggle';
 import React, { useEffect, useRef, useState } from 'react';
 import { raceScenarios, type Action } from './raceScenarios';
 
-export function ScenarioGallery({workbench = false, selector}: {workbench?: boolean; selector?: React.ReactNode}) {
+export function ScenarioGallery({workbench = false, selector,driverTarget=false}: {workbench?: boolean; selector?: React.ReactNode;driverTarget?:boolean}) {
+  const sharedRun=useRef<AbortController|null>(null);
   const [recoveryTiming, setRecoveryTiming] = useState({...defaultRecoveryTiming});
   const [elapsed, setElapsed] = useState(0);
   const [inspectionTime, setInspectionTime] = useState<number | null>(null);
@@ -36,7 +38,7 @@ export function ScenarioGallery({workbench = false, selector}: {workbench?: bool
   const duration = scenario.observeUntilMs ?? 1800;
   useEffect(()=>{if(!running)return;let frame=0;const tick=()=>{setElapsed(Math.min(duration,Math.round(performance.now()-started.current)));frame=requestAnimationFrame(tick)};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame)},[running,duration]);
   const append = (message: string) => setLog(old => [...old, `${Math.round(performance.now() - started.current)}ms · ${message}`]);
-  const stop = () => { epoch.current++; timers.current.forEach(clearTimeout); timers.current = []; controllers.current.forEach(c => c.abort()); controllers.current = []; watch.current?.disconnect(); watch.current = null; active.current = null; };
+  const stop = () => { sharedRun.current?.abort(); epoch.current++; timers.current.forEach(clearTimeout); timers.current = []; controllers.current.forEach(c => c.abort()); controllers.current = []; watch.current?.disconnect(); watch.current = null; active.current = null; };
   useEffect(() => () => stop(), []);
   const reset = () => { snapshots.current = []; setRecordedEnd(null); setInspectionTime(null); setElapsed(0); stop(); revision.current++; setRunning(false); setDraft(''); setStatus('Idle'); setScreen('editor'); setExists(true); setInput('Original brief'); setVerdict('Ready'); setLog([]); connected.current = true; };
   const connected = useRef(true);
@@ -51,7 +53,7 @@ export function ScenarioGallery({workbench = false, selector}: {workbench?: bool
     pending.current++; if (!(scenario.id === 'connection-recovery' && index === 1 && mode === 'buggy')) setDraft(''); setStatus('Loading'); append(`Request ${index + 1} submitted`);
     let terminal = false;
     try {
-      const response = await fetch('/api/generate', { method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId, scenario: { version: 1, id: scenario.id, prompt: input, cancelAtMs: 0, observeUntilMs: duration, events, assertion: { type: 'textAbsentAfterCancel', text: 'unused gallery assertion' } } }) });
+      const response = await fetch(driverTarget?'/api/runner/stream':'/api/generate', { method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId, scenario: { version: 1, id: scenario.id, prompt: input, cancelAtMs: 0, observeUntilMs: duration, events, assertion: { type: 'textAbsentAfterCancel', text: 'unused gallery assertion' } } }) });
       if (!response.ok || !response.body) throw new Error('Provider rejected request');
       const reader = response.body.getReader(), decoder = new TextDecoder(); let buffer = '';
       while (true) {
@@ -80,6 +82,7 @@ export function ScenarioGallery({workbench = false, selector}: {workbench?: bool
     finally { if (currentEpoch === epoch.current) pending.current--; }
   };
   const act = (action: Action) => {
+    if(driverTarget&&action==='first')started.current=performance.now();
     append(action);
     if (action === 'first' || action === 'second') { void request(action === 'first' ? 0 : 1); return; }
     if (action === 'disconnect') {
@@ -98,6 +101,12 @@ export function ScenarioGallery({workbench = false, selector}: {workbench?: bool
   };
   const run = () => {
     if(validation)return;
+    if(selected==='connection-recovery'&&!driverTarget){
+      reset();const controller=new AbortController();sharedRun.current=controller;setRunning(true);setVerdict('Observing…');started.current=performance.now();
+      void runDemo({kind:'recovery',mode,timing:recoveryTiming},controller.signal,events=>{
+        if(controller.signal.aborted)return;const captured=uiSnapshots(events);snapshots.current=captured.map(s=>({atMs:s.atMs,text:s.values.text??'',status:s.values.status??''}));const last=captured.at(-1);if(last){setDraft(last.values.text??'');setStatus(last.values.status??'');setLog((last.values.log??'').split('\n'));setElapsed(Math.min(duration,last.atMs))}
+      },()=>{}).then(report=>{if(controller.signal.aborted)return;setVerdict(`${report.kind==='error'?'RUN ERROR':report.kind.toUpperCase()}: ${report.message}`);setRecordedEnd(duration);setElapsed(duration);setRunning(false)}).catch(e=>{if(!controller.signal.aborted){setVerdict(`RUN ERROR: ${String(e)}`);setRunning(false)}});return;
+    }
     reset(); started.current = performance.now(); pending.current = 0; delivered.current = 0; problem.current = ''; setRunning(true); setVerdict('Observing…');
     snapshots.current = [{atMs:0,text:'',status:'Idle'}];
     let violation = '';
@@ -128,12 +137,12 @@ export function ScenarioGallery({workbench = false, selector}: {workbench?: bool
   };
   const inspected = inspectionTime === null ? null : snapshots.current.filter(snapshot => snapshot.atMs <= inspectionTime).at(-1);
   const labels: Record<Action, string> = { first: 'Generate', second: 'Generate again / Retry', cancel: 'Cancel', leave: 'Leave editor', return: 'Return to editor', delete: 'Delete item', change: 'Change brief', disconnect: 'Disconnect stream', reconnect: 'Restore connection' };
-  return <main><header><ThemeToggle/><span className="eyebrow">AGENT TIMELINE / {workbench ? 'LOCAL WORKBENCH' : 'SCENARIO GALLERY'}</span><h1>{workbench ? 'Connection loss and recovery' : `${raceScenarios.length} races to reproduce.`}</h1><p>Real fictional editor state, simulated provider streams. Each case includes an intentionally buggy behavior and a corrected version.</p>{workbench ? <a href="/?gallery">Explore more race scenarios →</a> : <a href="/">Back to editable cancellation workbench</a>}{selector}</header>
+  return <main>{driverTarget&&<label>Runner setup<textarea id="runner-setup" onChange={e=>{try{setRecoveryTiming(JSON.parse(e.target.value))}catch{}}}/></label>}<header><ThemeToggle/><span className="eyebrow">AGENT TIMELINE / {workbench ? 'LOCAL WORKBENCH' : 'SCENARIO GALLERY'}</span><h1>{workbench ? 'Connection loss and recovery' : `${raceScenarios.length} races to reproduce.`}</h1><p>Real fictional editor state, simulated provider streams. Each case includes an intentionally buggy behavior and a corrected version.</p>{workbench ? <a href="/?gallery">Explore more race scenarios →</a> : <a href="/">Back to editable cancellation workbench</a>}{selector}</header>
     <section className="controls">{!workbench && <label>Scenario<select aria-label="Gallery scenario" value={selected} disabled={running} onChange={e => { reset(); select(e.target.value); }}>{raceScenarios.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>}<label>Behavior<select aria-label="Gallery behavior" value={mode} disabled={running} onChange={e => { reset(); setMode(e.target.value); }}><option value="fixed">Fixed</option><option value="buggy">Buggy</option></select></label><div className="actions"><button onClick={reset}>{workbench ? 'Reset' : 'Reset gallery'}</button><button className="primary" disabled={running || !!validation} onClick={run}>{workbench ? 'Run scenario' : 'Run gallery scenario'}</button>{running && <button onClick={() => {capture(); setRecordedEnd(Math.round(performance.now()-started.current)); stop(); setRunning(false); setVerdict('STOPPED · INCOMPLETE'); setStatus('Stopped');}}>Stop test</button>}{!running && verdict !== 'Ready' && <button disabled={!!validation} onClick={run}>Replay again</button>}</div></section>
     {selected === 'connection-recovery' && <RecoveryTimeline timing={recoveryTiming} onChange={value=>{reset();setRecoveryTiming(value)}} disabled={running} elapsed={inspectionTime ?? elapsed} onSeek={inspectionTime !== null ? setInspectionTime : undefined}/>}
     {selected === 'connection-recovery' && !running && recordedEnd !== null && <section className="panel"><h2>Inspect replay</h2><p>Inspect recorded text, status, and events. The original verdict stays unchanged. This is a state recording, not a screenshot or a rerun.</p>{inspectionTime === null ? <button onClick={()=>setInspectionTime(recordedEnd)}>Inspect replay</button> : <><button onClick={()=>setInspectionTime(null)}>Exit inspection</button><label>Inspection time: {inspectionTime} ms<input aria-label="Inspection time" type="range" min={0} max={recordedEnd} step={1} value={inspectionTime} onChange={event=>setInspectionTime(Number(event.target.value))}/></label><p>Drag the solid playhead above or use this slider. Arrow keys move by 1 ms.</p><p data-testid="inspection-status">{inspected?.status || 'Idle'}</p><div className="response" data-testid="inspection-output">{inspected?.text || ''}</div><pre data-testid="inspection-events">{log.filter(line=>Number.parseInt(line,10)<=inspectionTime).join('\n') || 'No events yet.'}</pre></>}</section>}
     {validation && <p role="alert" className="validation">{validation}</p>}
     <section className="panel"><h2>{scenario.title}</h2><p>{scenario.goal}</p><ol>{scenario.actions.map((a, i) => <li key={i}><code>{a.atMs} ms</code>{labels[a.action]}</li>)}</ol><p className="hint">Actions run automatically using the editor controls below. Choose Buggy to reproduce the failure, then Fixed to verify the correction. This scenario observes for {duration} ms.</p></section>
-    <section className="panel" ref={root}><h2>Fictional draft editor</h2><div className="actions">{Object.entries(labels).map(([action, label]) => <button key={action} ref={node => { actions.current[action as Action] = node; }} disabled={!running} onClick={() => act(action as Action)}>{label}</button>)}</div><p>Screen: {screen} · Brief: {input}</p><p data-testid="gallery-status">{status}</p>{screen === 'editor' ? exists ? <div className="response" data-testid="gallery-output">{draft}</div> : <p>Item deleted</p> : <p>Library</p>}</section>
+    <section className="panel" ref={root}><h2>Fictional draft editor</h2><div className="actions">{Object.entries(labels).map(([action, label]) => <button key={action} data-action={action} ref={node => { actions.current[action as Action] = node; }} disabled={!driverTarget && (!running || selected==='connection-recovery')} onClick={() => act(action as Action)}>{label}</button>)}</div><p>Screen: {screen} · Brief: {input}</p><p data-testid="gallery-status">{status}</p>{screen === 'editor' ? exists ? <div className="response" data-testid="gallery-output">{draft}</div> : <p>Item deleted</p> : <p>Library</p>}</section>
     <section className="panel" aria-live="polite"><h2 data-testid="gallery-verdict">{verdict}</h2></section><section className="panel"><h2>Observed events</h2><pre data-testid="gallery-log">{log.join('\n') || 'Waiting for replay.'}</pre></section></main>;
 }

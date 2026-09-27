@@ -18,6 +18,10 @@ test('drag updates event and cancellation timing, displays milliseconds, and pre
  await marker.focus(); await page.keyboard.press('End'); await expect(marker).toHaveAttribute('aria-valuenow','1100');
  await page.keyboard.press('Home'); await expect(marker).toHaveAttribute('aria-valuenow','0');
  await page.keyboard.press('ArrowRight'); await expect(marker).toHaveAttribute('aria-valuenow','1');
+ const started=page.waitForResponse(r=>r.url().endsWith('/api/runner/builtin')&&r.request().method()==='POST');
  await page.getByRole('button',{name:'Run scenario',exact:true}).click();
  await expect(marker).toHaveAttribute('aria-disabled','true');
+ const {id}=await(await started).json();
+ await page.getByRole('button',{name:'Stop test',exact:true}).click();
+ await expect.poll(async()=> (await(await page.request.get(`/api/runner/run/${id}`)).json()).status).toBe('finished');
 });

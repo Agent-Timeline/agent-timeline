@@ -1,6 +1,7 @@
 import React from 'react';
 import type { RaceScenario } from './raceScenarios';
-export interface RecoveryTiming { partial: number; disconnect: number; checkpoint: number; reconnect: number; retry: number; response: number; complete: number; end: number }
+import type { RecoveryTiming } from '../shared/demo-config';
+export type { RecoveryTiming } from '../shared/demo-config';
 export const defaultRecoveryTiming: RecoveryTiming = {partial:100,disconnect:400,checkpoint:700,reconnect:900,retry:1000,response:1200,complete:1300,end:1800};
 const names: Record<keyof RecoveryTiming,string> = {partial:'Partial text',disconnect:'Disconnect stream',checkpoint:'Check disconnected state',reconnect:'Restore connection',retry:'Retry request',response:'Retry text',complete:'Retry complete',end:'Final verification'};
 export function recoveryValidation(t: RecoveryTiming): string {
