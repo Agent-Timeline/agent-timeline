@@ -27,10 +27,8 @@ export function ScenarioGallery({workbench = false, selector,driverTarget=false}
   const [verdict, setVerdict] = useState('Ready');
   const [log, setLog] = useState<string[]>([]);
   const root = useRef<HTMLDivElement>(null);
-  const actions = useRef<Partial<Record<Action, HTMLButtonElement | null>>>({});
   const epoch = useRef(0), revision = useRef(0), active = useRef<string | null>(null);
-  const controllers = useRef<AbortController[]>([]), timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const watch = useRef<MutationObserver | null>(null);
+  const controllers = useRef<AbortController[]>([]);
   const started = useRef(0);
   const baseScenario = raceScenarios.find(s => s.id === selected)!;
   const scenario = selected === 'connection-recovery' ? configureRecovery(baseScenario,recoveryTiming) : baseScenario;
@@ -38,11 +36,10 @@ export function ScenarioGallery({workbench = false, selector,driverTarget=false}
   const duration = scenario.observeUntilMs ?? 1800;
   useEffect(()=>{if(!running)return;let frame=0;const tick=()=>{setElapsed(Math.min(duration,Math.round(performance.now()-started.current)));frame=requestAnimationFrame(tick)};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame)},[running,duration]);
   const append = (message: string) => setLog(old => [...old, `${Math.round(performance.now() - started.current)}ms · ${message}`]);
-  const stop = () => { sharedRun.current?.abort(); epoch.current++; timers.current.forEach(clearTimeout); timers.current = []; controllers.current.forEach(c => c.abort()); controllers.current = []; watch.current?.disconnect(); watch.current = null; active.current = null; };
+  const stop = () => { sharedRun.current?.abort(); epoch.current++; controllers.current.forEach(c => c.abort()); controllers.current = []; active.current = null; };
   useEffect(() => () => stop(), []);
   const reset = () => { snapshots.current = []; setRecordedEnd(null); setInspectionTime(null); setElapsed(0); stop(); revision.current++; setRunning(false); setDraft(''); setStatus('Idle'); setScreen('editor'); setExists(true); setInput('Original brief'); setVerdict('Ready'); setLog([]); connected.current = true; };
   const connected = useRef(true);
-  const pending = useRef(0), delivered = useRef(0), problem = useRef('');
   const request = async (index: number) => {
     const events = scenario.requests[index]; if (!events) return;
     if (!connected.current) { append('Request blocked while disconnected'); return; }
@@ -50,8 +47,8 @@ export function ScenarioGallery({workbench = false, selector,driverTarget=false}
     const requestId = crypto.randomUUID(); active.current = requestId;
     const controller = new AbortController(); controllers.current.push(controller);
     const seen = new Set<string>();
-    pending.current++; if (!(scenario.id === 'connection-recovery' && index === 1 && mode === 'buggy')) setDraft(''); setStatus('Loading'); append(`Request ${index + 1} submitted`);
-    let terminal = false;
+    if (!(scenario.id === 'connection-recovery' && index === 1 && mode === 'buggy')) setDraft(''); setStatus('Loading'); append(`Request ${index + 1} submitted`);
+    let terminal = false, eventNumber=0;
     try {
       const response = await fetch(driverTarget?'/api/runner/stream':'/api/generate', { method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId, scenario: { version: 1, id: scenario.id, prompt: input, cancelAtMs: 0, observeUntilMs: duration, events, assertion: { type: 'textAbsentAfterCancel', text: 'unused gallery assertion' } } }) });
       if (!response.ok || !response.body) throw new Error('Provider rejected request');
@@ -64,13 +61,13 @@ export function ScenarioGallery({workbench = false, selector,driverTarget=false}
           if (!line || currentEpoch !== epoch.current) continue;
           const event = JSON.parse(line); if (event.type === 'start') continue;
           if (event.requestId !== requestId) throw new Error('Mismatched request identity');
-          delivered.current++;
+          eventNumber++;
           terminal = event.type === 'complete' || event.type === 'error';
           const stale = active.current !== requestId || currentRevision !== revision.current;
           const duplicate = event.eventId && seen.has(event.eventId);
           if (event.eventId) seen.add(event.eventId);
           const ignored = mode === 'fixed' && (stale || duplicate);
-          append(`Request ${index + 1} · ${event.type}${stale ? ' · stale arrival' : ''}${duplicate ? ' · duplicate event' : ''} · ${ignored ? 'ignored' : 'accepted'}`);
+          append(`Request ${index + 1} · ${event.type} · event ${eventNumber} ·${stale ? ' · stale arrival' : ''}${duplicate ? ' · duplicate event' : ''} · ${ignored ? 'ignored' : 'accepted'}`);
           if (ignored) continue;
           if (event.type === 'text') { setExists(true); setDraft(old => old + event.text); setStatus('Streaming'); }
           if (event.type === 'complete') { setStatus('Completed'); active.current = null; }
@@ -78,8 +75,7 @@ export function ScenarioGallery({workbench = false, selector,driverTarget=false}
         }
       }
       if (!terminal && !controller.signal.aborted) throw new Error('Stream ended without termination');
-    } catch (error) { if (currentEpoch === epoch.current && !controller.signal.aborted) problem.current = String(error); }
-    finally { if (currentEpoch === epoch.current) pending.current--; }
+    } catch (error) { if (currentEpoch === epoch.current && !controller.signal.aborted) {setStatus('Run error');append(String(error));} }
   };
   const act = (action: Action) => {
     if(driverTarget&&action==='first')started.current=performance.now();
@@ -101,39 +97,13 @@ export function ScenarioGallery({workbench = false, selector,driverTarget=false}
   };
   const run = () => {
     if(validation)return;
-    if(selected==='connection-recovery'&&!driverTarget){
+    if(!driverTarget){
       reset();const controller=new AbortController();sharedRun.current=controller;setRunning(true);setVerdict('Observing…');started.current=performance.now();
-      void runDemo({kind:'recovery',mode,timing:recoveryTiming},controller.signal,events=>{
-        if(controller.signal.aborted)return;const captured=uiSnapshots(events);snapshots.current=captured.map(s=>({atMs:s.atMs,text:s.values.text??'',status:s.values.status??''}));const last=captured.at(-1);if(last){setDraft(last.values.text??'');setStatus(last.values.status??'');setLog((last.values.log??'').split('\n'));setElapsed(Math.min(duration,last.atMs))}
+      void runDemo(selected==='connection-recovery'?{kind:'recovery',mode,timing:recoveryTiming}:{kind:'gallery',mode,preset:selected},controller.signal,events=>{
+        if(controller.signal.aborted)return;const captured=uiSnapshots(events);snapshots.current=captured.map(s=>({atMs:s.atMs,text:s.values.text??'',status:s.values.status??''}));const last=captured.at(-1);if(last){if(last.values.screen!==undefined)setScreen(last.values.screen);if(last.values.exists!==undefined)setExists(last.values.exists==='true');if(last.values.input!==undefined)setInput(last.values.input);setDraft(last.values.text??'');setStatus(last.values.status??'');setLog((last.values.log??'').split('\n'));setElapsed(Math.min(duration,last.atMs))}
       },()=>{}).then(report=>{if(controller.signal.aborted)return;setVerdict(`${report.kind==='error'?'RUN ERROR':report.kind.toUpperCase()}: ${report.message}`);setRecordedEnd(duration);setElapsed(duration);setRunning(false)}).catch(e=>{if(!controller.signal.aborted){setVerdict(`RUN ERROR: ${String(e)}`);setRunning(false)}});return;
     }
-    reset(); started.current = performance.now(); pending.current = 0; delivered.current = 0; problem.current = ''; setRunning(true); setVerdict('Observing…');
-    snapshots.current = [{atMs:0,text:'',status:'Idle'}];
-    let violation = '';
-    const inspect = () => {
-      capture();
-      const text = root.current?.querySelector('[data-testid="gallery-output"]')?.textContent || '';
-      if (scenario.forbidden.some(word => text.includes(word))) violation ||= 'Forbidden or duplicate content appeared.';
-    };
-    watch.current = new MutationObserver(inspect); watch.current.observe(root.current!, { subtree: true, childList: true, characterData: true });
-    for (const step of scenario.actions) timers.current.push(setTimeout(() => actions.current[step.action]?.click(), step.atMs));
-    const checkpoint = scenario.checkpoint;
-    if (checkpoint) timers.current.push(setTimeout(() => {
-      const text = root.current?.querySelector('[data-testid="gallery-output"]')?.textContent;
-      const state = root.current?.querySelector('[data-testid="gallery-status"]')?.textContent;
-      if (text !== checkpoint.text || state !== checkpoint.status) violation ||= 'Partial content or error recovery state was incorrect before retry.';
-      append('Checked partial content and error state before retry');
-    }, checkpoint.atMs));
-    timers.current.push(setTimeout(() => {
-      inspect();
-      const actual = root.current?.querySelector('[data-testid="gallery-output"]')?.textContent || '';
-      if (actual !== scenario.expected) violation ||= 'Final content did not match the expected result.';
-      if (scenario.id === 'delete-item' && root.current?.querySelector('[data-testid="gallery-output"]')) violation ||= 'Deleted item was recreated.';
-      if (scenario.expectedStatus && root.current?.querySelector('[data-testid="gallery-status"]')?.textContent !== scenario.expectedStatus) violation ||= 'Final loading/recovery state was incorrect.';
-      const expectedEvents = scenario.expectedDelivered ?? scenario.requests.reduce((sum, events) => sum + events.length, 0);
-      setVerdict(problem.current || pending.current || delivered.current !== expectedEvents ? `RUN ERROR: ${problem.current || 'Provider events incomplete'}` : violation ? `FAIL: ${violation}` : 'PASS: All scenario assertions held.');
-      setRecordedEnd(Math.max(duration, Math.round(performance.now()-started.current))); stop(); setRunning(false); setElapsed(duration);
-    }, duration));
+
   };
   const inspected = inspectionTime === null ? null : snapshots.current.filter(snapshot => snapshot.atMs <= inspectionTime).at(-1);
   const labels: Record<Action, string> = { first: 'Generate', second: 'Generate again / Retry', cancel: 'Cancel', leave: 'Leave editor', return: 'Return to editor', delete: 'Delete item', change: 'Change brief', disconnect: 'Disconnect stream', reconnect: 'Restore connection' };
@@ -143,6 +113,6 @@ export function ScenarioGallery({workbench = false, selector,driverTarget=false}
     {selected === 'connection-recovery' && !running && recordedEnd !== null && <section className="panel"><h2>Inspect replay</h2><p>Inspect recorded text, status, and events. The original verdict stays unchanged. This is a state recording, not a screenshot or a rerun.</p>{inspectionTime === null ? <button onClick={()=>setInspectionTime(recordedEnd)}>Inspect replay</button> : <><button onClick={()=>setInspectionTime(null)}>Exit inspection</button><label>Inspection time: {inspectionTime} ms<input aria-label="Inspection time" type="range" min={0} max={recordedEnd} step={1} value={inspectionTime} onChange={event=>setInspectionTime(Number(event.target.value))}/></label><p>Drag the solid playhead above or use this slider. Arrow keys move by 1 ms.</p><p data-testid="inspection-status">{inspected?.status || 'Idle'}</p><div className="response" data-testid="inspection-output">{inspected?.text || ''}</div><pre data-testid="inspection-events">{log.filter(line=>Number.parseInt(line,10)<=inspectionTime).join('\n') || 'No events yet.'}</pre></>}</section>}
     {validation && <p role="alert" className="validation">{validation}</p>}
     <section className="panel"><h2>{scenario.title}</h2><p>{scenario.goal}</p><ol>{scenario.actions.map((a, i) => <li key={i}><code>{a.atMs} ms</code>{labels[a.action]}</li>)}</ol><p className="hint">Actions run automatically using the editor controls below. Choose Buggy to reproduce the failure, then Fixed to verify the correction. This scenario observes for {duration} ms.</p></section>
-    <section className="panel" ref={root}><h2>Fictional draft editor</h2><div className="actions">{Object.entries(labels).map(([action, label]) => <button key={action} data-action={action} ref={node => { actions.current[action as Action] = node; }} disabled={!driverTarget && (!running || selected==='connection-recovery')} onClick={() => act(action as Action)}>{label}</button>)}</div><p>Screen: {screen} · Brief: {input}</p><p data-testid="gallery-status">{status}</p>{screen === 'editor' ? exists ? <div className="response" data-testid="gallery-output">{draft}</div> : <p>Item deleted</p> : <p>Library</p>}</section>
+    <section className="panel" ref={root}><h2>Fictional draft editor</h2><div className="actions">{Object.entries(labels).map(([action, label]) => <button key={action} data-action={action} disabled={!driverTarget} onClick={() => act(action as Action)}>{label}</button>)}</div><p>Screen: <span id="gallery-screen">{screen}</span> · Brief: <span id="gallery-input">{input}</span></p><span id="gallery-exists" hidden>{String(exists)}</span><p data-testid="gallery-status">{status}</p><div data-testid="gallery-content">{screen === 'editor' ? exists ? <div className="response" data-testid="gallery-output">{draft}</div> : <p>Item deleted</p> : <p>Library</p>}</div></section>
     <section className="panel" aria-live="polite"><h2 data-testid="gallery-verdict">{verdict}</h2></section><section className="panel"><h2>Observed events</h2><pre data-testid="gallery-log">{log.join('\n') || 'Waiting for replay.'}</pre></section></main>;
 }

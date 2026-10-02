@@ -1,3 +1,4 @@
+import {raceScenarios} from '../shared/race-scenarios';
 import {runDemo,uiSnapshots} from './demo-run';
 import { ConfiguredRunner } from './ConfiguredRunner';
 import { ThemeToggle } from './ThemeToggle';
@@ -134,7 +135,7 @@ function App({selector,driverTarget=false}: {selector: React.ReactNode;driverTar
 }
 function Workbench() {
   const [kind, setKind] = useState('cancel');
-  const selector = <label>Scenario<select aria-label="Workbench scenario" value={kind} onChange={event => setKind(event.target.value)}><option value="cancel">Cancel then late response</option><option value="recovery">Connection loss and recovery</option><option value="connected">Connected app (config file)</option></select><small>Switching scenarios resets the current run and unsaved edits.</small></label>;
-  return kind === 'connected' ? <ConfiguredRunner selector={selector}/> : kind === 'cancel' ? <App selector={selector}/> : <ScenarioGallery workbench selector={selector}/>;
+  const selector = <label>Scenario<select aria-label="Workbench scenario" value={kind} onChange={event => setKind(event.target.value)}><option value="cancel">Cancel then late response</option><option value="recovery">Connection loss and recovery</option><option value="connected">Connected app (config file)</option>{raceScenarios.filter(s=>s.id!=='connection-recovery').map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select><small>Switching scenarios resets the current run and unsaved edits.</small></label>;
+  return kind === 'connected' ? <ConfiguredRunner selector={selector}/> : kind === 'cancel' ? <App selector={selector}/> : kind==='recovery'?<ScenarioGallery workbench selector={selector}/>:<ConfiguredRunner key={kind} selector={selector} preset={kind}/>;
 }
 createRoot(document.getElementById('root')!).render(new URLSearchParams(location.search).get('runner-target')==='cancel'?<App selector={null} driverTarget/>:new URLSearchParams(location.search).get('runner-target')==='recovery'?<ScenarioGallery driverTarget/>:new URLSearchParams(location.search).has('gallery') ? <ScenarioGallery/> : <Workbench/>);

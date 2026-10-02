@@ -1,11 +1,22 @@
+import {raceScenarios} from './race-scenarios.js';
 import {parseScenario,type Scenario} from './engine.js';
 import {parseRunnerConfig,type RunnerConfig} from './runner-config.js';
 export interface RecoveryTiming {partial:number;disconnect:number;checkpoint:number;reconnect:number;retry:number;response:number;complete:number;end:number}
-export function demoConfig(origin:string,port:number,input:{kind:'cancel'|'recovery';mode:string;scenario?:Scenario;timing?:RecoveryTiming}):RunnerConfig{
+export function demoConfig(origin:string,port:number,input:{kind:'cancel'|'recovery'|'gallery';preset?:string;mode:string;scenario?:Scenario;timing?:RecoveryTiming}):RunnerConfig{
  if(!['fixed','buggy'].includes(input.mode))throw Error('Invalid demo behavior');
  const common={version:1 as const,name:`Built-in ${input.kind}`,appUrl:`${origin}/?runner-target=${input.kind}`,proxy:{port,path:'/api/generate'},setup:[] as RunnerConfig['setup'],actions:[] as RunnerConfig['actions'],assertions:[] as RunnerConfig['assertions'],evidence:[] as RunnerConfig['evidence'],observeUntilMs:0,capture:{text:'[data-testid="response"]',status:'[data-testid="app-status"]',log:'[data-testid="event-log"]',observations:'#runner-observations'}};
  if(input.kind==='cancel'){
   const s=parseScenario(input.scenario);return parseRunnerConfig({...common,observeUntilMs:s.observeUntilMs,proxy:{...common.proxy,scenario:s},setup:[{atMs:0,type:'fill',selector:'#runner-setup',value:JSON.stringify(s)},{atMs:0,type:'select',selector:'[aria-label="Application behavior"]',value:input.mode}],actions:[{atMs:0,type:'click',selector:'#runner-send'},{atMs:s.cancelAtMs,type:'click',selector:'#runner-cancel'}],assertions:[{type:'textAbsent',selector:'[data-testid="response"]',text:s.assertion.text,fromMs:s.cancelAtMs}],evidence:s.events.map(e=>({selector:'[data-testid="event-log"]',text:`${e.atMs}ms · ${e.type}`}))});
+ }
+ if(input.kind==='gallery'){
+  const preset=raceScenarios.find(s=>s.id===input.preset&&s.id!=='connection-recovery');if(!preset)throw Error('Unknown gallery preset');
+  const end=preset.observeUntilMs??1800;
+  const streams=preset.requests.map(events=>({version:1 as const,id:preset.id,prompt:'Synthetic gallery request',cancelAtMs:0,observeUntilMs:end,events,assertion:{type:'textAbsentAfterCancel' as const,text:'unused provider assertion'}}));
+  const content='[data-testid="gallery-content"]',status='[data-testid="gallery-status"]';
+  const assertions:RunnerConfig['assertions']=[...preset.forbidden.map(text=>({type:'textAbsent' as const,selector:content,text,fromMs:0})),{type:'textEquals',selector:content,text:preset.id==='delete-item'?'Item deleted':preset.expected}];
+  if(preset.checkpoint)assertions.push({type:'textEquals',selector:content,text:preset.checkpoint.text,atMs:preset.checkpoint.atMs},{type:'textEquals',selector:status,text:preset.checkpoint.status,atMs:preset.checkpoint.atMs});
+  if(preset.expectedStatus)assertions.push({type:'textEquals',selector:status,text:preset.expectedStatus});
+  return parseRunnerConfig({...common,name:preset.title,appUrl:`${origin}/?runner-target=recovery`,observeUntilMs:end,capture:{text:'[data-testid="gallery-output"]',status,log:'[data-testid="gallery-log"]',screen:'#gallery-screen',exists:'#gallery-exists',input:'#gallery-input'},proxy:{...common.proxy,scenario:streams[0],requests:streams.map(scenario=>({scenario,expectedOutcome:'complete'}))},setup:[{atMs:0,type:'select',selector:'[aria-label="Gallery scenario"]',value:preset.id},{atMs:0,type:'select',selector:'[aria-label="Gallery behavior"]',value:input.mode}],actions:preset.actions.map(a=>({atMs:a.atMs,type:'click',selector:`[data-action="${a.action}"]`})),assertions,evidence:streams.flatMap((s,i)=>s.events.map((e,j)=>({selector:'[data-testid="gallery-log"]',text:`Request ${i+1} · ${e.type} · event ${j+1} ·`}))) });
  }
  if(input.kind!=='recovery'||!input.timing)throw Error('Unknown demo');const t=input.timing;
  if(Object.values(t).some(n=>!Number.isInteger(n)||n<0||n>60000)||!(t.partial<t.disconnect&&t.disconnect<t.checkpoint&&t.checkpoint<t.reconnect&&t.reconnect<=t.retry&&t.retry<t.response&&t.response<t.complete&&t.complete<t.end))throw Error('Invalid recovery timing');

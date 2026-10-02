@@ -5,7 +5,7 @@ export function runnerMarks(config:RunnerConfig):RunnerMark[]{
  const marks:RunnerMark[]=[];
  config.actions.forEach((a,i)=>marks.push({id:`action:${i}`,lane:'App actions · run start',label:`${a.type} ${a.selector}`,atMs:a.atMs,maxMs:config.observeUntilMs-1}));
  config.assertions.forEach((a,i)=>marks.push({id:`assertion:${i}`,lane:'Assertions · observation start',label:`${a.type} ${a.selector}${a.type==='textAbsent'?' · window starts':a.atMs===undefined?' · final (read-only)':''}`,atMs:a.type==='textAbsent'?a.fromMs:a.atMs??config.observeUntilMs,maxMs:a.type!=='textAbsent'&&a.atMs===undefined?config.observeUntilMs:config.observeUntilMs-1}));
- config.proxy.scenario?.events.forEach((e,i)=>marks.push({id:`event:${i}`,lane:'Provider template · each request receipt',label:e.type,atMs:e.atMs,maxMs:config.proxy.scenario!.observeUntilMs}));
+ if(!config.proxy.requests?.every(r=>r.scenario))config.proxy.scenario?.events.forEach((e,i)=>marks.push({id:`event:${i}`,lane:'Provider template · each request receipt',label:e.type,atMs:e.atMs,maxMs:config.proxy.scenario!.observeUntilMs}));
  if(config.proxy.requests)config.proxy.requests.forEach((r,i)=>{r.scenario?.events.forEach((e,j)=>marks.push({id:`requestEvent:${i}:${j}`,lane:`Request ${i+1} provider · request receipt`,label:e.type,atMs:e.atMs,maxMs:r.scenario!.observeUntilMs}));for(const key of ['delayMs','disconnectMs'] as const)if(r[key]!==undefined)marks.push({id:`request:${i}:${key}`,lane:`Request ${i+1} faults · request receipt`,label:key,atMs:r[key]!,maxMs:60000})});
  else for(const key of ['delayMs','disconnectMs'] as const)if(config.proxy[key]!==undefined)marks.push({id:`fault:${key}`,lane:'Transport faults · request receipt',label:key,atMs:config.proxy[key]!,maxMs:60000});
  return marks;

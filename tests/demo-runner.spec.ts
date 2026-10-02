@@ -3,9 +3,10 @@ import {readFile,mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawn} from 'node:child_process';
-for(const kind of ['cancel','recovery'] as const)test(`${kind}: built-in report snapshot runs unchanged in the CLI`,async({request})=>{
+for(const preset of ['cancel','recovery','out-of-order','cancel-retry','partial-error','navigation','delete-item','change-inputs','duplicate'] as const)test(`${preset}: built-in report snapshot runs unchanged in the CLI`,async({request})=>{
  const scenario=JSON.parse(await readFile('scenarios/cancel-late-result.json','utf8'));
- const input={kind,mode:'fixed',scenario,timing:{partial:100,disconnect:400,checkpoint:700,reconnect:900,retry:1000,response:1200,complete:1300,end:1800}};
+ const kind=preset==='cancel'||preset==='recovery'?preset:'gallery';
+ const input={kind,preset,mode:'fixed',scenario,timing:{partial:100,disconnect:400,checkpoint:700,reconnect:900,retry:1000,response:1200,complete:1300,end:1800}};
  const response=await request.post('/api/runner/builtin',{headers:{'X-Agent-Timeline':'1'},data:input});expect(response.status()).toBe(202);
  const {id}=await response.json();let state:any;
  await expect.poll(async()=>{state=await(await request.get(`/api/runner/run/${id}`)).json();return state.status}).toBe('finished');

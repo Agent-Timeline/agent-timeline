@@ -154,4 +154,10 @@ Run sends a bounded validated snapshot to the backend, which keeps the app URL, 
 
 ## Built-in demo adapters
 
-Cancellation and recovery use this runner too. Their editors convert settings into a `RunnerConfig`; the report includes that executable snapshot. `capture` optionally maps up to ten names to CSS selectors whose text is recorded as `ui` events for workbench display. These observations do not replace assertions or delivery evidence. They can contain app text, so treat reports as application data. Other gallery cases and the iframe example still use their original runners.
+Cancellation and recovery use this runner too. Their editors convert settings into a `RunnerConfig`; the report includes that executable snapshot. `capture` optionally maps up to ten names to CSS selectors whose text is recorded as `ui` events for workbench display. These observations do not replace assertions or delivery evidence. They can contain app text, so treat reports as application data. All gallery cases use this runner; the iframe example still uses its original runner.
+
+## Customize a gallery preset
+
+Select one of the seven gallery presets in the main workbench. Drag timing markers or edit their millisecond fields. Use **Scenario JSON → Edit full configuration → Load current JSON** to change response text, actions or assertions, then **Apply JSON**. Keep delivery evidence consistent if changing event types or counts. Use **Preset behavior** to compare Fixed and Buggy.
+
+**Export runner config** saves the same snapshot consumed by the CLI; **Import runner config** validates a file up to 1 MB and preserves the current scenario on invalid input. **Reset preset** restores defaults. Preset app/proxy destinations are fixed; a configuration for your own application belongs in Connected app mode. Run executes the visible snapshot, Stop remains incomplete, and Replay uses the last report snapshot. Both local servers must remain running when using an exported demo configuration from the CLI.

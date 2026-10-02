@@ -4,7 +4,7 @@ Reproduce the exact moment your AI interface breaks, then turn it into a regress
 
 Agent Timeline is an open-source project for reproducing timing bugs in AI interfaces: streaming responses, cancellations, retries, and delayed results.
 
-Built-in cancellation and recovery now execute through the same Playwright runner as the CLI, returning observed UI state and assertion results to the workbench. Chromium must be installed for automatic runs. Other gallery scenarios and the optional iframe example retain their original runners.
+Built-in cancellation and recovery now execute through the same Playwright runner as the CLI, returning observed UI state and assertion results to the workbench. Chromium must be installed for automatic runs. All gallery presets also use the shared runner; only the optional iframe example retains its original runner.
 
 The local workbench includes an editable event timeline, a streaming provider, automatic cancellation replay, and pass/fail assertions against a real demo chat. A reusable TypeScript client connects to the simulated provider; the standalone chat can now be controlled from the workbench using its example-specific adapter. A configurable proxy and shared Playwright runner also test local apps at their own URLs without embedding.
 
@@ -16,7 +16,7 @@ The local workbench includes an editable event timeline, a streaming provider, a
 
 ## Choose a scenario
 
-Use the **Scenario** selector in the local workbench to switch between **Cancel then late response** and **Connection loss and recovery**. Recovery includes editable connection, request, and assertion timings, with Run scenario, Stop test, and Replay again. Switching scenarios clears the current run and unsaved edits. Recovery currently runs against the fictional editor; its multi-request recipe does not support standalone-chat targeting or JSON import/export.
+Use the **Scenario** selector in the local workbench to switch between **Cancel then late response** and **Connection loss and recovery**. Recovery includes editable connection, request, and assertion timings, with Run scenario, Stop test, and Replay again. The selector also includes the seven gallery presets. These open the shared timing editor: drag actions, provider events and assertion windows, or use Scenario JSON for payload/assertion changes. Export runner config saves the executable CLI configuration; Import runner config restores it. Switching scenarios clears the current run and unsaved edits. Recovery currently runs against the fictional editor; its multi-request recipe does not support standalone-chat targeting or JSON import/export.
 
 ## Standalone integration example
 
@@ -137,7 +137,7 @@ Choose a scenario and run it in **Buggy** mode to reproduce the defect, then **F
 
 The gallery runs real React editor state and browser controls against the local streaming provider. It checks forbidden content throughout replay, expected final content, provider completion, and an intermediate error-state assertion before retry. Browser scheduling remains approximate; incomplete delivery is a run error rather than a pass.
 
-Gallery recipes live in `frontend/raceScenarios.ts` and are covered by `tests/gallery.spec.ts` (`npm test`). They use multiple requests and app actions, so they are separate from the editable workbench's version-1 JSON format. Gallery import/export, arbitrary host integration, and persistent navigation state are not implemented. The navigation example changes views inside the demo; it does not reload the page.
+Gallery recipes live in `shared/race-scenarios.ts` and are covered by `tests/gallery.spec.ts` (`npm test`). They use multiple requests and app actions, so they are separate from the editable workbench's version-1 JSON format. The seven non-recovery gallery presets are also available in the main workbench with timing edits, full RunnerConfig JSON editing, and import/export. Their local demo destinations remain fixed; use Connected app for your own host. Persistent navigation state is not implemented. The navigation example changes views inside the demo; it does not reload the page.
 
 ### Editing timeline markers
 

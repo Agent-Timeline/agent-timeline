@@ -40,7 +40,7 @@ export function parseRunnerConfig(input:unknown):RunnerConfig {
     for(const a of input[key]){if(!obj(a)||!time(a.atMs)||a.atMs<last||(key==='setup'&&a.atMs!==0)||a.atMs>=input.observeUntilMs||!['click','fill','select'].includes(String(a.type))||!text(a.selector)||((a.type==='fill'||a.type==='select')&&typeof a.value!=='string'))throw new Error('Invalid action');last=a.atMs;}
   }
   if(!Array.isArray(input.assertions)||input.assertions.length<1||input.assertions.length>100||!Array.isArray(input.evidence)||input.evidence.length<1||input.evidence.length>1000)throw new Error('Assertions and delivery evidence are required');
-  for(const a of input.assertions){if(!obj(a)||!text(a.selector)||!text(a.text)||!['textAbsent','textContains','textEquals'].includes(String(a.type))||(a.type==='textAbsent'&&(!time(a.fromMs)||a.fromMs>=input.observeUntilMs)))throw new Error('Invalid assertion');if(a.atMs!==undefined&&(a.type==='textAbsent'||!time(a.atMs)||a.atMs>=input.observeUntilMs))throw new Error('Invalid assertion checkpoint');}
+  for(const a of input.assertions){if(!obj(a)||!text(a.selector)||!(text(a.text)||(a.type==='textEquals'&&a.text===''))||!['textAbsent','textContains','textEquals'].includes(String(a.type))||(a.type==='textAbsent'&&(!time(a.fromMs)||a.fromMs>=input.observeUntilMs)))throw new Error('Invalid assertion');if(a.atMs!==undefined&&(a.type==='textAbsent'||!time(a.atMs)||a.atMs>=input.observeUntilMs))throw new Error('Invalid assertion checkpoint');}
   for(const e of input.evidence)if(!obj(e)||!text(e.selector)||!text(e.text))throw new Error('Invalid evidence');
   return structuredClone(input) as unknown as RunnerConfig;
 }

@@ -308,3 +308,26 @@ Recovery uses separate per-request simulated streams, checks the disconnected in
 Verification: final `npm run verify` passed backend/frontend type checks, unit tests, 2 provider API tests, 38 workbench/integration tests, 3 standalone-chat tests, 1 proxy browser test, and both builds. New integration tests replay each built-in report's exact configuration through the CLI and compare assertions. Existing tests verify buggy failures, fixed passes, editable timing, live observations, reset, stop and replay. A visible local cancellation run also returned PASS with all expected arrivals. Earlier checks exposed asynchronous setup readiness and a drag test that left a backend run active; both were corrected. One intermediate run was invalidated by a development reload; the final suite ran without source edits.
 
 Limits: other gallery presets and the optional iframe example retain their legacy runners. Built-in automatic runs now require local Chromium plus the frontend/backend processes. Observation timestamps, provider offsets and app receipt timestamps retain distinct documented origins; timing is not virtualized. Reports contain captured app text and configuration. No private application or design-system files were accessed. Next migration work can reuse this adapter pattern for remaining gallery cases.
+
+
+## Remaining gallery presets migrated to the shared runner
+
+Out-of-order responses, cancel/retry, partial stream failure, navigation, deletion, changed inputs and duplicate delivery now execute through the backend runner used by the CLI. Canonical recipes live in shared/race-scenarios.ts; the frontend keeps a compatibility export. Removed the gallery's local scheduling and verdict implementation. The visible gallery mirrors captured text, status, screen, item presence and input state from the tested UI.
+
+Preserved forbidden-content windows, intermediate error checkpoints and final-result checks. A stable content container supports navigation/deletion checks; deletion must retain its deleted-item state, and empty final results use textEquals with an empty string. Empty text remains invalid for textAbsent/textContains. Numbered delivery evidence distinguishes identical duplicate chunks and confirms every planned arrival.
+
+Verification: npm run verify passed type checks, unit tests, 2 provider API tests, 45 workbench/integration tests, 3 standalone-chat tests, 1 proxy browser test and both builds. All gallery presets failed in Buggy mode and passed in Fixed mode. Each preset's report snapshot replayed unchanged through the CLI with matching assertion results. git diff --check passed. An initial verification run was stopped to finish cleanup and add parity coverage; the final run completed successfully.
+
+Limits and next step: the optional iframe adapter retains its separate runner. The seven migrated gallery recipes are still presets; bringing them into the generic editable workbench selector with JSON import/export remains next. No private application or design-system files were used.
+
+## Editable gallery presets in the main workbench
+
+Added all seven migrated gallery presets to the main scenario selector. They reuse ConfiguredRunner and RunnerTimeline for action/provider/assertion timing, full configuration JSON editing, file import/export, Fixed/Buggy selection, reset, Run, Stop and Replay. The backend loads canonical presets and executes edited snapshots while enforcing the preset's app/proxy destination. No connected-host config file is required. Default provider templates hidden by per-request overrides are no longer displayed as editable events.
+
+Verification: npm run verify passed type checks, unit tests, 2 provider API tests, 47 workbench/integration tests, 3 standalone-chat tests, 1 proxy browser test and both builds. The new integration test selects every preset, changes action/provider timing and response/assertion text, exports and imports the configuration, verifies Fixed PASS and Buggy FAIL, and preserves state after invalid import. API coverage rejects unknown presets and changed destinations. The first run exposed a delayed reset overwriting a newer import; revision guarding fixed it, and the final full run passed. git diff --check passed.
+
+Limits: response payload and assertion editing use the full JSON editor; the timeline edits timing. The specialized cancellation/recovery editors remain. Changes to event types/counts may require updating delivery evidence. Exported demo configurations require the local frontend/backend to stay running; connecting a different app still uses Connected app mode. Next: improve field-level editing and onboarding based on real use. No private app or design-system source was accessed.
+
+## Consistent disclosure spacing
+
+Applied shared spacing to every expandable section in public workbench panels, including Loaded configuration and Edit full configuration across presets and connected-app mode. Added separation from neighboring buttons/dropdowns and between expanded controls. npm run verify and git diff --check passed. No private design-system files changed.
