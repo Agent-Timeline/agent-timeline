@@ -14,6 +14,10 @@ The local workbench includes an editable event timeline, a streaming provider, a
 
 [Watch the interactive timeline demo (MOV)](docs/videos/agenttimeline2.mov) — drag events, change timing, and replay the cancel-then-late-response scenario.
 
+## About the UI in demos
+
+Screenshots and videos shared on social media may show a custom UI preview created by Kate Steinmeyer, the project's engineer and designer. That optional design system is separate and is not included in this open-source repository. The default UI included here is fully functional and does not require the custom design system.
+
 ## Choose a scenario
 
 Use the **Scenario** selector in the local workbench to switch between **Cancel then late response** and **Connection loss and recovery**. Recovery includes editable connection, request, and assertion timings, with Run scenario, Stop test, and Replay again. The selector also includes the seven gallery presets. These open the shared timing editor: drag actions, provider events and assertion windows, or use Scenario JSON for payload/assertion changes. Export runner config saves the executable CLI configuration; Import runner config restores it. Switching scenarios clears the current run and unsaved edits. Recovery currently runs against the fictional editor; its multi-request recipe does not support standalone-chat targeting or JSON import/export.

@@ -331,3 +331,7 @@ Limits: response payload and assertion editing use the full JSON editor; the tim
 ## Consistent disclosure spacing
 
 Applied shared spacing to every expandable section in public workbench panels, including Loaded configuration and Edit full configuration across presets and connected-app mode. Added separation from neighboring buttons/dropdowns and between expanded controls. npm run verify and git diff --check passed. No private design-system files changed.
+
+## README demo appearance note
+
+Clarified that social-media previews may feature a separate custom UI, while the included default UI is fully functional without it. Credits Kate Steinmeyer as the project’s engineer and designer. Documentation-only change; checked with git diff --check.
