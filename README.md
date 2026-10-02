@@ -115,6 +115,10 @@ Simulate AI provider responses while the application’s real rendering, state, 
 - [Implementation scope](docs/MVP.md)
 - [Architecture specification](docs/ARCHITECTURE.md)
 
+## Contributing
+
+Contributions are welcome. Read the [contribution guide](CONTRIBUTING.md) for setup, checks, and pull request expectations. Open an issue before starting a major feature; small fixes can go straight to a PR. Use synthetic examples only.
+
 ## Credits
 
 A project by Visuail LLC. Engineering: Kate Steinmeyer.

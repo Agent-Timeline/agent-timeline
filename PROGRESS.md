@@ -335,3 +335,7 @@ Applied shared spacing to every expandable section in public workbench panels, i
 ## README demo appearance note
 
 Clarified that social-media previews may feature a separate custom UI, while the included default UI is fully functional without it. Credits Kate Steinmeyer as the project’s engineer and designer. Documentation-only change; checked with git diff --check.
+
+## Contributor onboarding
+
+Added CONTRIBUTING.md, a README link, and a pull request template covering setup, review scope, synthetic examples, accessibility, verification, and MIT contribution terms. Checked documentation with git diff --check; no runtime code changed. GitHub branch protection and issue labels were not changed; those remain repository administration settings.
