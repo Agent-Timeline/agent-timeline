@@ -2,6 +2,21 @@
 
 The CLI and workbench call the same Playwright runner. Your development app runs at its own URL; no iframe is required. Start the app separately and route its development stream endpoint to the local proxy. Keep production routing unchanged.
 
+## Set up in the workbench
+
+Start `npm run dev`, then select **Connect your app**. No `TIMELINE_RUNNER_CONFIG` is required for this flow.
+
+1. Enter a loopback app URL, proxy port and POST endpoint path.
+2. Enter CSS selectors for Send, Cancel, the response container, and delivery evidence. An optional prompt selector adds a fill action before Send.
+3. Route your app's development requests to the displayed proxy address. The generated stream is Agent Timeline NDJSON; this form does not adapt other streaming protocols or modify your app.
+4. Use **Check connection** for app reachability and temporary proxy startup. This does not verify selectors, routing, or stream compatibility.
+5. Choose **Use this configuration**, review the editable timeline, and choose **Run scenario**. Read observed events and assertion results below it.
+6. **Export runner config**, save the download locally, then run `npm run run:app -- --config agent-timeline.config.json` from the checkout for the same test.
+
+The backend keeps the setup configuration in memory until restart. It replaces the current connected-app destination for that server session; it does not overwrite a config file. Reload configuration restores that session snapshot, or reads the environment-configured file when no setup session exists. Setup/check requests are rejected while a test or another setup check is active. Runs remain bound to the loaded destination, and each opens a fresh browser context without your existing login.
+
+The starter checks cancellation at 700 ms, late text at a 1100 ms provider offset, and observes until 2200 ms. Delivery evidence must prove the response arrived, not just that a button was clicked. Use CLI/JSON configuration for forwarding a local upstream, custom protocols, or more complex request plans.
+
 ## Generate a starter for your app
 
 From the Agent Timeline checkout, run:

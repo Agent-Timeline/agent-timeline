@@ -339,3 +339,11 @@ Clarified that social-media previews may feature a separate custom UI, while the
 ## Contributor onboarding
 
 Added CONTRIBUTING.md, a README link, and a pull request template covering setup, review scope, synthetic examples, accessibility, verification, and MIT contribution terms. Checked documentation with git diff --check; no runtime code changed. GitHub branch protection and issue labels were not changed; those remain repository administration settings.
+
+## Connect your app setup flow
+
+Added a public workbench form for local URL, proxy route/port, action and response selectors, optional prompt filling, forbidden late text, and delivery evidence. Reuses setup reachability checks and the shared runner; loads a session configuration into the existing timeline, results, and JSON export. Added a CLI command for the downloaded config.
+
+Limits: routing changes are still manual; the starter simulates NDJSON, not an automatic SDK adapter. Checks verify reachability/proxy startup only. Session configurations are in memory, and test browsers do not reuse user login state. No private app or custom design-system code is included.
+
+Verification: `npm run verify` passed on the final implementation: 25 unit tests, 2 provider API tests, 49 frontend/integration tests, 3 standalone-chat tests, 1 proxy test, type checks and builds. New tests cover setup without an environment file, destination restrictions, form validation, reachability, a real synthetic run, and JSON export. An earlier run during editing had one iframe-provider test failure; the final stable rerun passed it. `git diff --check` passed. Next validation: an external engineer connecting a compatible local app without guided setup.
