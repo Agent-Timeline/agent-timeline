@@ -8,7 +8,7 @@ Start `npm run dev`, then select **Connect your app**. No `TIMELINE_RUNNER_CONFI
 
 1. Enter a loopback app URL, proxy port and POST endpoint path.
 2. Enter CSS selectors for Send, Cancel, the response container, and delivery evidence. An optional prompt selector adds a fill action before Send.
-3. Route your app's development requests to the displayed proxy address. The generated stream is Agent Timeline NDJSON; this form does not adapt other streaming protocols or modify your app.
+3. Route your app's development requests to the displayed proxy address. Select Agent Timeline NDJSON or Chat Completions text SSE to match your app. The form does not modify app routing. See [Chat Completions setup](CHAT-COMPLETIONS.md).
 4. Use **Check connection** for app reachability and temporary proxy startup. This does not verify selectors, routing, or stream compatibility.
 5. Choose **Use this configuration**, review the editable timeline, and choose **Run scenario**. Read observed events and assertion results below it.
 6. **Export runner config**, save the download locally, then run `npm run run:app -- --config agent-timeline.config.json` from the checkout for the same test.
@@ -37,7 +37,7 @@ npm run init -- --app-url http://127.0.0.1:3000 --send-selector '#send' --cancel
 
 Without those flags, the starter uses `data-testid` selectors for `send`, `cancel`, `response`, and `events`. These are suggested selectors, not auto-detected controls. Review the generated file before running:
 
-1. Route the app's development stream endpoint to the generated proxy port/path. Simulation uses Agent Timeline NDJSON; it does not automatically adapt your SDK.
+1. Route the app's development stream endpoint to the generated proxy port/path. Simulation defaults to Agent Timeline NDJSON; `--protocol chat-completions` selects text SSE. It does not automatically adapt other protocols.
 2. Match selectors to your real controls and containers. Add setup/fill actions for a prompt if needed.
 3. Review cancellation and observation timing, forbidden response text, and delivery evidence. The initial example checks `Weekend Atlas` after 700 ms and observes until 2200 ms.
 4. Replace `Stream ended` evidence with an app diagnostic that proves the intended delivery occurred. For aborting transports, review `expectedOutcome` and evidence accordingly.
@@ -176,3 +176,24 @@ Cancellation and recovery use this runner too. Their editors convert settings in
 Select one of the seven gallery presets in the main workbench. Drag timing markers or edit their millisecond fields. Use **Scenario JSON → Edit full configuration → Load current JSON** to change response text, actions or assertions, then **Apply JSON**. Keep delivery evidence consistent if changing event types or counts. Use **Preset behavior** to compare Fixed and Buggy.
 
 **Export runner config** saves the same snapshot consumed by the CLI; **Import runner config** validates a file up to 1 MB and preserves the current scenario on invalid input. **Reset preset** restores defaults. Preset app/proxy destinations are fixed; a configuration for your own application belongs in Connected app mode. Run executes the visible snapshot, Stop remains incomplete, and Replay uses the last report snapshot. Both local servers must remain running when using an exported demo configuration from the CLI.
+
+## Diagnose a failed setup or run
+
+An incomplete run reports `kind: "error"` and a structured `diagnosis` in the CLI JSON. The connected workbench shows the same diagnosis and a **Try this** instruction. This is separate from `kind: "fail"`, which means a configured UI assertion failed after required delivery checks completed.
+
+| Diagnostic code | What was observed | What to check |
+| --- | --- | --- |
+| `proxy-unavailable` | Local proxy startup failed | Port availability and development routing |
+| `browser-unavailable` | Browser startup failed | Install Playwright Chromium; review the launch error |
+| `app-unreachable` | Navigation failed | Local app startup, URL and fresh-session access |
+| `action-target` | A browser action failed | Selector validity, unique match, visibility, enabled state and control type |
+| `selector-target` | A check could not resolve one target | Response/evidence selector and container lifetime |
+| `origin-blocked` | A resource request left the configured app origin | Same-origin API routing, external resources or login redirects |
+| `request-rejected` | Simulation rejected the request body | Protocol selection and payload shape |
+| `no-proxy-request` | No matching POST reached the proxy during observation | Send behavior, endpoint, port and observation window |
+| `upstream-error` / `stream-error` | Forwarding or stream delivery failed | Upstream availability and transport handling |
+| `missing-evidence` | Required app delivery-log text was absent | Log selector/text, client parsing and whether delivery finished |
+| `unexpected-outcome` | Request counts or completion/abort outcomes differed | Request plan, fault settings and observation duration |
+| `observation-error` | Observation could not finish | Raw error, timing budget and app navigation |
+
+Diagnostics report observed failure categories, not proven root causes. For example, missing delivery evidence can indicate a parser problem, but does not establish one. An action that fails first can prevent later routing checks from running. The original error remains available. User-stopped runs remain stopped/incomplete and do not receive a setup-failure diagnosis. Reports can contain app selectors and captured text; review them before sharing.

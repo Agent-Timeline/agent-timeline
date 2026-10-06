@@ -94,3 +94,7 @@ For a late-arrival race test, invalidate the request in the application's state 
 - No provider-specific SDK compatibility, tool calls, audio, or cancellation acknowledgements.
 - The standalone chat adapter connects its Send/Cancel controls and response assertion to the workbench. There is no general host-selector configuration or universal external-app runner yet.
 - App configuration and app-specific scenarios can remain in a separate private repository. Nothing in the connection requires publishing them.
+
+## Chat Completions text SSE
+
+The CLI proxy and configured runner also support `protocol: "chat-completions"`. This does not change the standalone provider’s NDJSON contract. See [the independent SSE example and supported subset](CHAT-COMPLETIONS.md).

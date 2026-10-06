@@ -30,9 +30,13 @@ Run a small independent chat app with Send, Cancel, and intentionally buggy/fixe
 
 Choose **Connect your app** in the Scenario selector. Enter your local app URL, proxy endpoint and port, Send/Cancel/response selectors, and delivery evidence. Optionally configure a prompt input. **Check connection** checks app reachability and temporary proxy startup; **Use this configuration** loads a cancellation test into the editable timeline. Run it, inspect results, and export the config for `npm run run:app -- --config agent-timeline.config.json`.
 
-The form does not modify app routing. Route your development endpoint to the displayed proxy address and support Agent Timeline NDJSON, or configure a local upstream through the CLI/JSON editor for another protocol. Reachability does not verify selectors or streaming compatibility. Setup is held in backend memory until restart; download the config to keep it. Runs use a fresh browser context, without your existing browser login.
+The form does not modify app routing. Route your development endpoint to the displayed proxy address and select NDJSON or Chat Completions text SSE to match your parser. Other protocols can use a local upstream through the CLI/JSON editor. Reachability does not verify selectors or streaming compatibility. Setup is held in backend memory until restart; download the config to keep it. Runs use a fresh browser context, without your existing browser login.
 
 Start with `npm run init -- --app-url http://127.0.0.1:3000` to generate a local configuration and check app/proxy reachability. Review the generated selectors and route your development endpoint to the proxy. The JSON configuration controls the app URL, proxy endpoint, browser actions, and assertions. **Connected app (config file)** in the workbench and `npm run run:app` execute the same runner and return observed events and assertion results. See [configuration and commands](docs/RUNNER.md). A [connected recovery example](docs/RUNNER.md#connection-loss-and-recovery-against-a-connected-app) disconnects the first stream, clicks Retry, and checks intermediate state and duplicate-free final output. This currently runs from a source checkout; no npm package is published.
+
+## Chat Completions streaming adapter
+
+The proxy now supports text-only Chat Completions SSE as well as NDJSON. Select the stream protocol in **Connect your app**, or set `proxy.protocol` to `chat-completions` in your runner config. A synthetic independent SSE chat demonstrates late-response cancellation through the workbench and CLI. See [setup, example and limits](docs/CHAT-COMPLETIONS.md).
 
 ## Run locally
 
@@ -182,6 +186,8 @@ After a connection-recovery run finishes or is stopped, choose **Inspect replay*
 Run `npm run proxy -- --scenario scenarios/cancel-late-result.json` for a local scripted stream, or configure a fixed development upstream with `--upstream`. First-response delay and forced disconnect controls are available. See the [setup and Playwright late-chunk example](examples/proxy/README.md). `npm run test:proxy` tests the standalone app at its own URL without an iframe. This proxy command runs from a source checkout; no npm package is published. Use [the connected-app runner](docs/RUNNER.md) to configure browser actions and assertions.
 
 ### Connected-app failure evidence
+
+Incomplete runs now include a diagnosis and a **Try this** step in the workbench and CLI JSON: check missing controls, local routing, rejected stream requests, or missing delivery evidence. See [diagnostic codes and limits](docs/RUNNER.md#diagnose-a-failed-setup-or-run).
 
 Failed configured assertions include captured UI text, expected text, selector, observation time, and phase (`first-violation`, `checkpoint`, or `final`) in both CLI JSON reports and the connected workbench. Intermediate failures retain their original evidence even when the UI recovers. Evidence uses the browser observation clock; action and proxy events use the runner clock, so nearby events are context rather than proven causes. **Replay again** uses the captured configuration; **Reload configuration** restores the setup session, or loads disk changes when using a configured file. Review captured app text before sharing a report.
 

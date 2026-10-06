@@ -347,3 +347,25 @@ Added a public workbench form for local URL, proxy route/port, action and respon
 Limits: routing changes are still manual; the starter simulates NDJSON, not an automatic SDK adapter. Checks verify reachability/proxy startup only. Session configurations are in memory, and test browsers do not reuse user login state. No private app or custom design-system code is included.
 
 Verification: `npm run verify` passed on the final implementation: 25 unit tests, 2 provider API tests, 49 frontend/integration tests, 3 standalone-chat tests, 1 proxy test, type checks and builds. New tests cover setup without an environment file, destination restrictions, form validation, reachability, a real synthetic run, and JSON export. An earlier run during editing had one iframe-provider test failure; the final stable rerun passed it. `git diff --check` passed. Next validation: an external engineer connecting a compatible local app without guided setup.
+
+## Chat Completions text stream adapter
+
+Added an optional Chat Completions SSE wire format to the simulation proxy, shared runner configuration, proxy/init CLI commands, and public connection form. Existing consumers default to NDJSON; upstream forwarding remains raw bytes. Added an independent Fetch/SSE chat and runner fixture, with no Agent Timeline client import or live model calls.
+
+Supports text deltas, completion, scripted errors, first-response delay and forced disconnect. Tool calls, Responses API, usage, audio, multiple choices and full SDK compatibility are outside this first adapter. Development endpoint routing remains explicit.
+
+Verification: `npm run verify` passed: 27 unit tests, 2 provider API tests, 50 frontend/integration tests, 3 standalone-chat tests, 1 proxy test, type checks and builds. New checks cover SSE framing/metadata, invalid requests, error/disconnect behavior, delayed headers, independent buggy/fixed handling, and workbench/CLI parity. `git diff --check` passed. Next validation: connect an external text-streaming app using its existing parser; compatibility with third-party SDK versions has not yet been tested.
+
+## Possible future work
+
+These are backlog candidates, not implemented features or release commitments.
+
+- **Switch model during generation:** add an editable preset with synthetic buggy/fixed examples. Model A starts streaming; switching to Model B cancels the active generation; a new request starts with B while A’s delayed chunks and completion still arrive. Check that A’s late text never enters B’s response, A’s completion does not clear B’s loading state, the new request actually specifies B, and prior conversation history stays intact. Reuse changed-input and overlapping-request patterns. Verifying the selected model requires inspecting request metadata, not only rendered text. The initial preset would use cancel-on-switch semantics; letting A finish and applying B to the next message is a separate valid product behavior. Consider after SDK compatibility validation of the current adapter.
+
+## Connected-run failure diagnosis
+
+Added structured error diagnostics shared by CLI reports and the connected workbench, with a title, original detail, diagnostic code, optional selector, and next step. Categories cover proxy/browser startup, navigation, action/check selectors, blocked origins, rejected simulation requests, no matching proxy request, stream/upstream errors, missing delivery evidence, and unexpected outcomes. Added proxy failure events so format advice can be based on a rejected request rather than inferred from missing UI text. Assertion failures and user-stopped runs retain their separate meanings.
+
+Limits: diagnostics describe observed categories, not guaranteed root causes; the first failed action may prevent later integration checks. Missing evidence cannot prove a parser incompatibility. No private application data or design-system source was used.
+
+Verification: `npm run verify` passed: 27 unit tests, 2 provider API tests, 52 frontend/integration tests, 3 standalone-chat tests, 1 proxy test, type checks and builds. Added real runner tests distinguishing selector errors, absent requests, rejected protocols and missing evidence, plus workbench rendering coverage. Documentation diff checks passed. Next: validate whether the advice resolves first-run setup problems for an external engineer.

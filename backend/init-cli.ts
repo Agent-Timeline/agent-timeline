@@ -11,6 +11,7 @@ Creates a starter cancellation test without changing your app. Existing files ar
   --out FILE                 Config destination (default agent-timeline.config.json)
   --proxy-port PORT          Runner-owned proxy port (default 4468)
   --endpoint PATH            Proxy POST route (default /api/generate)
+  --protocol FORMAT          ndjson (default) or chat-completions (text-only SSE)
   --upstream URL             Fixed local unauthenticated upstream instead of NDJSON simulation
   --send-selector CSS        Send control (default [data-testid="send"])
   --cancel-selector CSS      Cancel control (default [data-testid="cancel"])
@@ -26,6 +27,7 @@ Exit codes: 0 generated/checks passed (or skipped), 1 generated/check incomplete
 
 try {
   const { values } = parseArgs({ options: {
+    protocol:{type:'string',default:'ndjson'},
     'app-url': { type: 'string' }, out: { type: 'string', default: 'agent-timeline.config.json' },
     'proxy-port': { type: 'string', default: '4468' }, endpoint: { type: 'string', default: '/api/generate' },
     upstream: { type: 'string' }, 'send-selector': { type: 'string', default: '[data-testid="send"]' },
@@ -42,7 +44,7 @@ try {
     const scenario = JSON.parse(await readFile(new URL('../scenarios/cancel-late-result.json', import.meta.url), 'utf8'));
     const config = parseRunnerConfig({
       version: 1, name: 'Local app cancellation', appUrl: values['app-url'],
-      proxy: { port: Number(values['proxy-port']), path: values.endpoint,
+      proxy: { port: Number(values['proxy-port']), path: values.endpoint, ...(!values.upstream?{protocol:values.protocol}:{}),
         ...(values.upstream ? { upstream: values.upstream } : { scenario }) },
       setup: [],
       actions: [
@@ -59,7 +61,7 @@ try {
     console.log('Review these CSS selectors (each must match one element):');
     for (const [label, selector] of [['Send', values['send-selector']], ['Cancel', values['cancel-selector']], ['Response', values['response-selector']], ['Delivery evidence', values['evidence-selector']]]) console.log(`  ${label}: ${selector}`);
     console.log(`Route your app's development POST endpoint to http://127.0.0.1:${config.proxy.port}${config.proxy.path}. Keep production routing unchanged.`);
-    console.log(values.upstream ? 'Forwarding relays raw bytes without credentials; review expected cancellation outcome and choose real forbidden text/evidence.' : 'Simulation emits Agent Timeline NDJSON; your client must understand this protocol. It is not an automatic AI SDK adapter.');
+    console.log(values.upstream ? 'Forwarding relays raw bytes without credentials; review expected cancellation outcome and choose real forbidden text/evidence.' : `Simulation protocol: ${values.protocol}. Use a matching client. Chat Completions support is text-only SSE, not Responses or tool calls.`);
     console.log('Set prompt/setup actions if needed. Review 700ms cancellation, 2200ms observation, forbidden text "Weekend Atlas", and evidence "' + values['evidence-text'] + '". Evidence must prove delivery, not just that Send was clicked.');
     if (!values['skip-check']) {
       const checks = await checkSetup(config);

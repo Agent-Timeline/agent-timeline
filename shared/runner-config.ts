@@ -3,7 +3,7 @@ export type BrowserAction = { atMs:number; type:'click'|'fill'|'select'; selecto
 export interface RequestPlan { scenario?:Scenario; expectedOutcome: 'complete' | 'aborted'; delayMs?: number; disconnectMs?: number }
 export interface RunnerConfig {
   version:1; name:string; appUrl:string; capture?:Record<string,string>;
-  proxy:{requests?:RequestPlan[];expectedOutcome?:'complete'|'aborted'; expectedRequests?:number;port:number; path:string; scenario?:Scenario; upstream?:string; delayMs?:number; disconnectMs?:number};
+  proxy:{protocol?:'ndjson'|'chat-completions';requests?:RequestPlan[];expectedOutcome?:'complete'|'aborted'; expectedRequests?:number;port:number; path:string; scenario?:Scenario; upstream?:string; delayMs?:number; disconnectMs?:number};
   setup:BrowserAction[]; actions:BrowserAction[]; observeUntilMs:number;
   assertions:({type:'textAbsent';selector:string;text:string;fromMs:number}|{type:'textContains'|'textEquals';selector:string;text:string;atMs?:number})[];
   evidence:{selector:string;text:string}[];
@@ -32,6 +32,8 @@ export function parseRunnerConfig(input:unknown):RunnerConfig {
       if(request.disconnectMs!==undefined&&request.expectedOutcome!=='aborted')throw new Error('A disconnected request must expect abortion');
     }
   }
+  if(p.protocol!==undefined&&!['ndjson','chat-completions'].includes(String(p.protocol)))throw Error('Unsupported stream protocol');
+  if(p.protocol!==undefined&&p.upstream)throw Error('Stream protocol applies only to simulation');
   if(!!p.scenario===!!p.upstream)throw new Error('Choose proxy scenario or upstream');
   if(p.scenario)parseScenario(p.scenario);if(p.upstream)localUrl(p.upstream);
   for(const key of ['delayMs','disconnectMs'])if(p[key]!==undefined&&!time(p[key]))throw new Error('Invalid fault time');
@@ -45,4 +47,5 @@ export function parseRunnerConfig(input:unknown):RunnerConfig {
   return structuredClone(input) as unknown as RunnerConfig;
 }
 export interface RunEvent { atMs:number; kind:string; message:string }
-export interface RunReport { scenario?:RunnerConfig; id:string; kind:'pass'|'fail'|'error'|'stopped'; message:string; events:RunEvent[]; assertions:{description:string;passed:boolean;evidence?:{selector:string;type:string;expected:string;actual:string;atMs:number;phase:'first-violation'|'checkpoint'|'final';clock:'browser-observation'}}[] }
+export interface RunDiagnosis { code:string; title:string; detail:string; nextStep:string; selector?:string }
+export interface RunReport { diagnosis?:RunDiagnosis; scenario?:RunnerConfig; id:string; kind:'pass'|'fail'|'error'|'stopped'; message:string; events:RunEvent[]; assertions:{description:string;passed:boolean;evidence?:{selector:string;type:string;expected:string;actual:string;atMs:number;phase:'first-violation'|'checkpoint'|'final';clock:'browser-observation'}}[] }

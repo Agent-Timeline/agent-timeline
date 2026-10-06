@@ -1,3 +1,4 @@
+import {chatCompletionStream} from './stream-format.js';
 import type { RequestPlan } from '../shared/runner-config.js';
 import { createServer, request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
@@ -7,6 +8,7 @@ import { parseScenario, type Scenario } from '../shared/engine.js';
 
 export interface ProxyOptions {
   path?: string;
+  protocol?: 'ndjson'|'chat-completions';
   onEvent?: (kind: string, request: number) => void;
   requests?: RequestPlan[];
   scenario?: Scenario;
@@ -17,6 +19,8 @@ export interface ProxyOptions {
 // One explicit route and one fixed upstream; never an arbitrary destination from a request.
 export function createStreamProxy(options: ProxyOptions) {
   if (!!options.scenario === !!options.upstream) throw new Error('Choose exactly one scenario or upstream');
+  if(options.protocol!==undefined&&!['ndjson','chat-completions'].includes(options.protocol))throw Error('Unsupported stream protocol');
+  if(options.protocol!==undefined&&options.upstream)throw Error('Stream protocol applies only to simulation');
   if (options.scenario) parseScenario(options.scenario);
   if (options.upstream && (!['http:', 'https:'].includes(options.upstream.protocol) || options.upstream.username || options.upstream.password)) throw new Error('Unsupported upstream URL');
   for (const value of [options.delayMs, options.disconnectMs]) if (value !== undefined && (!Number.isInteger(value) || value < 0 || value > 60000)) throw new Error('Fault times must be integers from 0 to 60000');
@@ -49,6 +53,7 @@ export function createStreamProxy(options: ProxyOptions) {
       emit('delivery');
       if (!res.write(chunk)) await once(res, 'drain', { signal });
     };
+    let phase='request';
     try {
       const chunks: Buffer[] = []; let bytes = 0;
       for await (const chunk of req) {
@@ -59,18 +64,21 @@ export function createStreamProxy(options: ProxyOptions) {
       const body = Buffer.concat(chunks);
       if (options.scenario) {
         const input = JSON.parse(body.toString());
-        if (typeof input.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(input.requestId)) throw new Error('Invalid request ID');
+        const chat=options.protocol==='chat-completions'?chatCompletionStream(input):undefined;
+        if (!chat && (typeof input?.requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(input.requestId))) throw new Error('Invalid request ID');
+        phase='stream';
         // The CLI fixture wins over any scenario sent by an app.
         await delay(settings.delayMs ?? 0, undefined, { signal });
-        res.writeHead(200, { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+        res.writeHead(200, { 'Content-Type': chat?'text/event-stream; charset=utf-8':'application/x-ndjson', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
         res.flushHeaders();
-        await write(JSON.stringify({ type: 'start', requestId: input.requestId }) + '\n');
+        await write(chat?chat.start:JSON.stringify({ type: 'start', requestId: input.requestId }) + '\n');
         const start = performance.now();
         for (const event of (settings.scenario ?? options.scenario).events) {
           await delay(Math.max(0, event.atMs - (performance.now() - start)), undefined, { signal });
-          await write(JSON.stringify({ ...event, requestId: input.requestId }) + '\n');
+          await write(chat?chat.event(event):JSON.stringify({ ...event, requestId: input.requestId }) + '\n');
         }
       } else {
+        phase='upstream';
         const target = options.upstream!;
         const upstream = (target.protocol === 'https:' ? httpsRequest : httpRequest)(target, {
           method: 'POST', signal,
@@ -92,6 +100,7 @@ export function createStreamProxy(options: ProxyOptions) {
       }
       res.end(); emit('complete');
     } catch {
+      if(!signal.aborted)emit(phase==='request'?'request-rejected':phase==='upstream'?'upstream-error':'stream-error');
       if (!signal.aborted && !res.headersSent) { res.writeHead(options.upstream ? 502 : 400); res.end('Stream request failed'); }
       else res.destroy();
     } finally {

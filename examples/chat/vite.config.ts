@@ -11,5 +11,5 @@ export default defineConfig({
         });
       } },
   } },
-  build: { outDir: '../../dist/example-chat', emptyOutDir: true },
+  build: { rollupOptions:{input:{chat:fileURLToPath(new URL('./index.html',import.meta.url)),sse:fileURLToPath(new URL('./sse.html',import.meta.url))}}, outDir: '../../dist/example-chat', emptyOutDir: true },
 });

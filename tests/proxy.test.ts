@@ -49,3 +49,21 @@ for(const mode of ['simulate','forward'] as const)test(`${mode}: disconnect firs
   assert.ok(observations.includes('3:unexpected-request'));
  }finally{proxy.close();upstream.close();upstream.closeAllConnections()}
 });
+
+test('Chat Completions SSE has stable metadata, escaped content, stop and DONE without requestId',async()=>{
+ const proxy=createStreamProxy({scenario,protocol:'chat-completions',delayMs:40});const base=await listen(proxy.server);
+ try{
+  const start=performance.now();const response=await fetch(base+'/api/generate',{method:'POST',body:JSON.stringify({model:'synthetic',messages:[{role:'user',content:'hello'}],stream:true})});
+  assert.ok(performance.now()-start>=30);assert.match(response.headers.get('content-type')!,/text\/event-stream/);
+  const frames=(await response.text()).trim().split('\n\n').map(s=>s.slice(6));assert.equal(frames.pop(),'[DONE]');const chunks=frames.map(s=>JSON.parse(s));
+  assert.equal(chunks[0].choices[0].delta.role,'assistant');assert.equal(chunks[1].choices[0].delta.content,'late');assert.equal(chunks[2].choices[0].finish_reason,'stop');
+  assert.equal(new Set(chunks.map(c=>c.id)).size,1);assert.ok(chunks.every(c=>c.object==='chat.completion.chunk'&&c.model==='synthetic'));
+  for(const extra of [{stream:false},{tools:[]},{stream_options:{include_usage:true}},{n:2}])assert.equal((await fetch(base+'/api/generate',{method:'POST',body:JSON.stringify({model:'synthetic',messages:[{role:'user',content:'test'}],stream:true,...extra})})).status,400);
+ }finally{proxy.close()}
+});
+test('Chat Completions error and disconnect do not fabricate successful completion',async()=>{
+ for(const disconnect of [false,true]){
+  const proxy=createStreamProxy({protocol:'chat-completions',scenario:{...scenario,events:[{atMs:10,type:'text',text:'line\n"quote" 🌱'},{atMs:100,type:'error',message:'Synthetic error'}]},...(disconnect?{disconnectMs:40}:{})});const base=await listen(proxy.server);
+  try{const response=await fetch(base+'/api/generate',{method:'POST',body:JSON.stringify({model:'synthetic',messages:[{role:'user',content:'hi'}],stream:true})});if(disconnect)await assert.rejects(response.text());else{const text=await response.text();assert.ok(!text.includes('[DONE]'));const frames=text.trim().split('\n\n').map(s=>JSON.parse(s.slice(6)));assert.equal(frames[1].choices[0].delta.content,'line\n"quote" 🌱');assert.equal(frames[2].error.message,'Synthetic error')}}finally{proxy.close()}
+ }
+});
