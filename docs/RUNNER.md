@@ -197,3 +197,13 @@ An incomplete run reports `kind: "error"` and a structured `diagnosis` in the CL
 | `observation-error` | Observation could not finish | Raw error, timing budget and app navigation |
 
 Diagnostics report observed failure categories, not proven root causes. For example, missing delivery evidence can indicate a parser problem, but does not establish one. An action that fails first can prevent later routing checks from running. The original error remains available. User-stopped runs remain stopped/incomplete and do not receive a setup-failure diagnosis. Reports can contain app selectors and captured text; review them before sharing.
+
+## Browser-local saved scenarios
+
+Use **Saved scenarios** to give the current scenario a name and **Save as new**, or **Save changes** to update the active saved snapshot. The library retains the full runner configuration: app URL, proxy settings, setup/browser actions, provider payloads and timing, assertions and delivery evidence. Runs and screenshots are not stored in the library.
+
+Choose a saved entry and **Open saved scenario** to restore it in the shared runner editor. Opening registers its destination with the local backend but does not run the test. Built-in cancellation, recovery and gallery presets save as executable runner configurations and reopen in that editor rather than their specialized editor. The optional legacy iframe chat is not supported by this library; its existing JSON export remains available.
+
+**Rename saved**, **Duplicate saved**, and **Delete saved** manage the selected saved snapshot. Duplicate copies the saved version; save your current edits first if you want them included. **Save changes** updates the active opened/saved scenario, not another entry merely selected in the list. Apply JSON drafts before saving. The UI warns before replacing unsaved scenario edits or leaving the page; it does not silently autosave them. Setup form fields that have not been applied are not part of the saved scenario.
+
+Storage is local to this browser profile and site origin (including the port). Clearing browser data removes it. Storage failures leave the existing library unchanged and display an error; malformed stored data is not overwritten. Configurations can contain private app details. Use **Export runner config** for backups, sharing, or CLI use; imported configurations can be saved through the same controls. No account, cloud sync, or production-app modification is involved. Apps and proxies still need to be available locally when reopening a test.

@@ -29,6 +29,7 @@ export function createRunnerApi(configPath:string|undefined,demo?:{origin:string
     const upstream=httpRequest(`http://127.0.0.1:${demo.port}/api/generate`,{method:'POST',headers:{'Content-Type':'application/json'}},reply=>{res.writeHead(reply.statusCode??502,{'Content-Type':'application/x-ndjson','Cache-Control':'no-store'});reply.on('aborted',()=>res.destroy());reply.on('error',()=>res.destroy());reply.pipe(res)});upstream.on('error',()=>{if(!res.headersSent)res.writeHead(502);res.end()});res.on('close',()=>upstream.destroy());req.pipe(upstream);return true;
    }
    if(req.method!=='POST'||req.headers['x-agent-timeline']!=='1'){json(res,400,{error:'Unsupported runner request'});return true}
+   if(req.url==='/api/runner/compile'&&demo){let raw='';for await(const chunk of req){raw+=chunk.toString();if(Buffer.byteLength(raw)>1048576)throw Error('Configuration exceeds 1 MB')}json(res,200,demoConfig(demo.origin,demo.port,JSON.parse(raw)));return true}
    if(req.url==='/api/runner/setup'||req.url==='/api/runner/check'){
     if(isRunning()||checking){json(res,409,{error:'Wait for the active run or setup check to finish'});return true}
     let raw='';for await(const chunk of req){raw+=chunk.toString();if(Buffer.byteLength(raw)>1048576)throw Error('Runner snapshot exceeds 1 MB')}

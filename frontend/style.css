@@ -133,3 +133,6 @@ a{color:var(--public-b7ceff);text-underline-offset:3px}a:hover{color:var(--publi
 .connect-fields legend{margin-bottom:12px}
 .connect-fields label{display:grid;gap:8px;min-width:0}
 .connect-fields input{width:100%;box-sizing:border-box}
+
+.scenario-library-fields{display:grid;gap:16px}
+.scenario-library-fields .actions{gap:12px}

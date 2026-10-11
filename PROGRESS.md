@@ -369,3 +369,13 @@ Added structured error diagnostics shared by CLI reports and the connected workb
 Limits: diagnostics describe observed categories, not guaranteed root causes; the first failed action may prevent later integration checks. Missing evidence cannot prove a parser incompatibility. No private application data or design-system source was used.
 
 Verification: `npm run verify` passed: 27 unit tests, 2 provider API tests, 52 frontend/integration tests, 3 standalone-chat tests, 1 proxy test, type checks and builds. Added real runner tests distinguishing selector errors, absent requests, rejected protocols and missing evidence, plus workbench rendering coverage. Documentation diff checks passed. Next: validate whether the advice resolves first-run setup problems for an external engineer.
+
+## Local scenario library
+
+Added browser-local named runner snapshots with Save as new, Save changes, Open, Rename, Duplicate and Delete. Built-in cancellation/recovery/gallery configurations can be compiled without running and reopened in the shared runner editor; connected snapshots restore their backend session destination. Added unsaved-edit guards, draft handling, schema validation, and storage failure protection. JSON export/import remains the backup and sharing path.
+
+Limits: no cloud sync or automatic saving; storage is browser/profile/origin-specific and clearing browser data removes it. Built-ins reopen in the shared editor. The legacy iframe target is excluded. Unapplied connection-form fields and test reports are not saved. Multiple tabs read current storage before mutations; there is no collaborative merge system.
+
+Verification: `npm run verify` passed: 27 unit tests, 2 provider API tests, 55 frontend/integration tests, 3 standalone-chat tests, 1 proxy test, type checks and builds. New browser tests cover save/edit/reopen/run, unsaved-switch protection, rename/duplicate/delete, reload persistence, corrupted storage preservation and storage-write failures. Initial verification exposed a status-label collision and test selector issue; both were corrected before the passing full rerun. `git diff --check` passed. Next validation: use the library across repeated editing sessions and confirm the shared-editor reopening flow is clear.
+
+Saved-library spacing refinement: added 16px between fields and action rows and 12px between wrapping buttons. `npm run verify` passed again (27 unit, 2 provider, 55 frontend/integration, 3 standalone-chat, 1 proxy, type checks and builds).
